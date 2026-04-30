@@ -1,0 +1,59 @@
+body {
+  margin: 0;
+  max-width: 100vw;
+  height: 100vh; /* Ensure the body takes up the full viewport height */
+  display: flex; /* Make body a flex container */
+}
+
+#pageContainer {
+  display: flex;
+  width: 100%;
+  height: 100vh; /* Full viewport height */
+  overflow: hidden; /* Prevent overflow due to long content */
+}
+
+#blocklyDiv {
+  flex-grow: 1; /* Let blocklyDiv take up all available space */
+  min-width: 600px; /* Minimum width for blocklyDiv */
+  height: 100%; /* Full height of the page */
+  background-color: #f0f0f0; /* Optional: Background color to see the blocklyDiv clearly */
+}
+
+#outputPanel {
+  display: flex;
+  flex-direction: column;
+  width: 400px; /* Fixed width for the output panel */
+  flex-shrink: 0; /* Prevent the panel from shrinking */
+  height: 100%; /* Full height */
+  overflow: auto; /* Scrollable if content overflows */
+  margin: 0; /* Remove margin for perfect alignment */
+  background-color: #fff; /* Optional: Background color to distinguish the panel */
+}
+
+.collapsibleUI {
+  background-color: #eee;
+  color: #444;
+  cursor: pointer;
+  padding: 18px;
+  width: 100%;
+  border: none;
+  text-align: left;
+  outline: none;
+  font-size: 15px;
+}
+
+#generatedCodeDisplay {
+  height: 50%;
+  background-color: rgb(247, 240, 228);
+}
+
+#generatedCodeDummy {
+  white-space: pre-wrap;
+  background-color: rgb(247, 240, 228);
+}
+
+#output {
+  height: 50%;
+}
+
+

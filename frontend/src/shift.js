@@ -3686,7 +3686,7 @@ var random = Math.random;
 // output/Effect.Random/index.js
 var randomInt = function(low) {
   return function(high) {
-    return function __do4() {
+    return function __do3() {
       var n = random();
       var asNumber = (toNumber(high) - toNumber(low) + 1) * n + toNumber(low);
       return floor2(asNumber);
@@ -27680,7 +27680,7 @@ var varRead = function(x) {
         return 0;
       }
       ;
-      throw new Error("Failed pattern match at Main (line 422, column 16 - line 424, column 32): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 423, column 16 - line 425, column 32): " + [v.constructor.name]);
     }();
     return varOut;
   };
@@ -27701,7 +27701,7 @@ var readSequenceNumber = function(i) {
               return i;
             }
             ;
-            throw new Error("Failed pattern match at Main (line 408, column 36 - line 412, column 47): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Main (line 409, column 36 - line 413, column 47): " + [v1.constructor.name]);
           }();
           return number;
         }
@@ -27710,7 +27710,7 @@ var readSequenceNumber = function(i) {
           return i;
         }
         ;
-        throw new Error("Failed pattern match at Main (line 405, column 15 - line 415, column 30): " + [v.constructor.name]);
+        throw new Error("Failed pattern match at Main (line 406, column 15 - line 416, column 30): " + [v.constructor.name]);
       }();
       return list;
     };
@@ -27755,7 +27755,7 @@ var resolveExpression = function(v) {
         return v.value0;
       }
       ;
-      throw new Error("Failed pattern match at Main (line 391, column 1 - line 391, column 102): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 392, column 1 - line 392, column 102): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
     };
   };
 };
@@ -27768,7 +27768,7 @@ var performPlay = function(er) {
       return function(sample) {
         return function(i) {
           return function(params) {
-            return function __do4() {
+            return function __do3() {
               var varMap = liftEffect2(read(er.variables))();
               var sequenceMap = liftEffect2(read(er.sequences))();
               var sampleNum = resolveExpression(i)(varMap)(sequenceMap);
@@ -27791,7 +27791,7 @@ var performMidiPlay = function(er) {
       return function(sample) {
         return function(i) {
           return function(params) {
-            return function __do4() {
+            return function __do3() {
               var varMap = liftEffect2(read(er.variables))();
               var sequenceMap = liftEffect2(read(er.sequences))();
               var channel = resolveExpression(i)(varMap)(sequenceMap);
@@ -27812,7 +27812,7 @@ var performMidi = function(er) {
     return function(nowCycles) {
       return function(channel) {
         return function(params) {
-          return function __do4() {
+          return function __do3() {
             var varMap = liftEffect2(read(er.variables))();
             var sequenceMap = liftEffect2(read(er.sequences))();
             var midiChannel = resolveExpression(channel)(varMap)(sequenceMap);
@@ -27835,13 +27835,13 @@ var parse = function(er) {
     }
     ;
     if (v instanceof Right) {
-      return function __do4() {
+      return function __do3() {
         write(v.value0)(er.programRef)();
         return "success";
       };
     }
     ;
-    throw new Error("Failed pattern match at Main (line 84, column 14 - line 88, column 23): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 85, column 14 - line 89, column 23): " + [v.constructor.name]);
   };
 };
 var panFix = function(p) {
@@ -27871,7 +27871,7 @@ var loopList = function(v) {
     return Nil.value;
   }
   ;
-  throw new Error("Failed pattern match at Main (line 214, column 1 - line 214, column 33): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Main (line 215, column 1 - line 215, column 33): " + [v.constructor.name]);
 };
 var limitLoopTime = function(n) {
   var $134 = n <= 35e-4;
@@ -27886,15 +27886,18 @@ var launchSynthEngine = function __do() {
   initializeWebAudio(se)();
   return se;
 };
-var launchDirt = function __do2() {
-  var wd = newWebDirt({
-    sampleMapUrl: "samples/sampleMap.json",
-    sampleFolder: "samples"
-  })();
-  initializeWebAudio2(wd)();
-  return wd;
+var launchDirt = function(baseUrl) {
+  var mapUrl = baseUrl + "/sampleMap.json";
+  return function __do3() {
+    var wd = newWebDirt({
+      sampleMapUrl: mapUrl,
+      sampleFolder: baseUrl
+    })();
+    initializeWebAudio2(wd)();
+    return wd;
+  };
 };
-var launch = function __do3() {
+var launch = function __do2() {
   var launchDateTime = nowDateTime();
   var tempo = $$new(launchDateTime)();
   var wStart = $$new(launchDateTime)();
@@ -27940,7 +27943,7 @@ var play = function(wd) {
         var panFixed = panFix(i.pan / 100);
         var $137 = i.s === "synth";
         if ($137) {
-          return function __do4() {
+          return function __do3() {
             playSynth(synth)({
               whenPosix: i.whenPosix,
               note: i.note,
@@ -27954,7 +27957,7 @@ var play = function(wd) {
         ;
         var $138 = i.note >= 50;
         if ($138) {
-          return function __do4() {
+          return function __do3() {
             playSample(wd)({
               s: i.s,
               n: i.n,
@@ -27971,7 +27974,7 @@ var play = function(wd) {
         var $139 = i.note <= -50;
         if ($139) {
           var rNote = -50;
-          return function __do4() {
+          return function __do3() {
             playSample(wd)({
               s: i.s,
               n: i.n,
@@ -27985,7 +27988,7 @@ var play = function(wd) {
           };
         }
         ;
-        return function __do4() {
+        return function __do3() {
           playSample(wd)({
             s: i.s,
             n: i.n,
@@ -28004,7 +28007,7 @@ var play = function(wd) {
 var fillMaps = function(er) {
   return function(s) {
     return function(n) {
-      return function __do4() {
+      return function __do3() {
         var varMap = liftEffect2(read(er.variables))();
         var origMap = liftEffect2(read(er.originalVariables))();
         var newMap = insert3(s)(n)(varMap);
@@ -28054,7 +28057,7 @@ var crunchVar = function(m) {
 };
 var performVariableA = function(er) {
   return function(v) {
-    return function __do4() {
+    return function __do3() {
       var varMap = liftEffect2(read(er.variables))();
       var sequenceMap = liftEffect2(read(er.sequences))();
       var newmap = crunchVar(varMap)(sequenceMap)(new VariableA(v.value0, v.value1));
@@ -28066,7 +28069,7 @@ var performVariableA = function(er) {
 var performListAction = function(er) {
   return function(la) {
     return function(nowCycles) {
-      return function __do4() {
+      return function __do3() {
         var xs = traverse2(performAction(er)(nowCycles))(la)();
         return concat(xs);
       };
@@ -28077,7 +28080,7 @@ var performAction = function(v) {
   return function(v1) {
     return function(v2) {
       if (v2 instanceof Play) {
-        return function __do4() {
+        return function __do3() {
           var t = read(v.tempo)();
           var sampleEvent = performPlay(v)(t)(v1)(v2.value0)(v2.value1)(v2.value2)();
           return sampleEvent;
@@ -28085,7 +28088,7 @@ var performAction = function(v) {
       }
       ;
       if (v2 instanceof MidiPlay) {
-        return function __do4() {
+        return function __do3() {
           var t = read(v.tempo)();
           var midiEvent = performMidiPlay(v)(t)(v1)("midimidmidi")(v2.value0)(v2.value1)();
           return midiEvent;
@@ -28097,7 +28100,7 @@ var performAction = function(v) {
       }
       ;
       if (v2 instanceof RandomN) {
-        return function __do4() {
+        return function __do3() {
           var varMap = liftEffect2(read(v.variables))();
           var seqMap = liftEffect2(read(v.sequences))();
           var rX = resolveExpression(v2.value1)(varMap)(seqMap);
@@ -28111,7 +28114,7 @@ var performAction = function(v) {
       }
       ;
       if (v2 instanceof RandomList) {
-        return function __do4() {
+        return function __do3() {
           var varMap = liftEffect2(read(v.variables))();
           var seqMap = liftEffect2(read(v.sequences))();
           var resolvedList = map12(function(n) {
@@ -28123,7 +28126,7 @@ var performAction = function(v) {
             var v4 = index(resolvedList)(randInt);
             if (v4 instanceof Just) {
               var newmap = insert3(v2.value0)(v4.value0)(varMap);
-              return function __do5() {
+              return function __do4() {
                 write(newmap)(v.variables)();
                 return Nil.value;
               };
@@ -28133,14 +28136,14 @@ var performAction = function(v) {
               return pure5(Nil.value);
             }
             ;
-            throw new Error("Failed pattern match at Main (line 292, column 20 - line 299, column 39): " + [v4.constructor.name]);
+            throw new Error("Failed pattern match at Main (line 293, column 20 - line 300, column 39): " + [v4.constructor.name]);
           }();
           return randLookUp();
         };
       }
       ;
       if (v2 instanceof Sequence) {
-        return function __do4() {
+        return function __do3() {
           var varMap = liftEffect2(read(v.variables))();
           var sequenceMap = liftEffect2(read(v.sequences))();
           var resolvedList = map12(function(n) {
@@ -28153,7 +28156,7 @@ var performAction = function(v) {
       }
       ;
       if (v2 instanceof Conditional) {
-        return function __do4() {
+        return function __do3() {
           var varMap = liftEffect2(read(v.variables))();
           var seqMap = liftEffect2(read(v.sequences))();
           var rV = resolveExpression(v2.value0)(varMap)(seqMap);
@@ -28194,7 +28197,7 @@ var performAction = function(v) {
         };
       }
       ;
-      throw new Error("Failed pattern match at Main (line 258, column 1 - line 258, column 79): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 259, column 1 - line 259, column 79): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
     };
   };
 };
@@ -28206,7 +28209,7 @@ var performLoop = function(er) {
 var compareOriginalVariable = function(er) {
   return function(s) {
     return function(n) {
-      return function __do4() {
+      return function __do3() {
         var varMap = liftEffect2(read(er.variables))();
         var origMap = liftEffect2(read(er.originalVariables))();
         var originalValue = function() {
@@ -28219,7 +28222,7 @@ var compareOriginalVariable = function(er) {
             return 2012;
           }
           ;
-          throw new Error("Failed pattern match at Main (line 179, column 25 - line 181, column 44): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at Main (line 180, column 25 - line 182, column 44): " + [v.constructor.name]);
         }();
         var $190 = n === originalValue;
         if ($190) {
@@ -28237,7 +28240,7 @@ var compareOriginalVariable = function(er) {
 var updateGlobalVariable = function(v) {
   return function(v1) {
     if (v1 instanceof VariableGlobal) {
-      return function __do4() {
+      return function __do3() {
         var varMap = liftEffect2(read(v.variables))();
         var seqMap = liftEffect2(read(v.sequences))();
         var resolvedNumber = resolveExpression(v1.value1)(varMap)(seqMap);
@@ -28251,14 +28254,14 @@ var updateGlobalVariable = function(v) {
             return fillMaps(v)(v1.value0)(resolvedNumber);
           }
           ;
-          throw new Error("Failed pattern match at Main (line 150, column 16 - line 152, column 57): " + [v2.constructor.name]);
+          throw new Error("Failed pattern match at Main (line 151, column 16 - line 153, column 57): " + [v2.constructor.name]);
         }();
         return newMap();
       };
     }
     ;
     if (v1 instanceof GlobalSequence) {
-      return function __do4() {
+      return function __do3() {
         var varMap = liftEffect2(read(v.variables))();
         var sequenceMap = liftEffect2(read(v.sequences))();
         var resolvedList = map12(function(n) {
@@ -28273,7 +28276,7 @@ var updateGlobalVariable = function(v) {
       return pure5(unit);
     }
     ;
-    throw new Error("Failed pattern match at Main (line 144, column 1 - line 144, column 63): " + [v.constructor.name, v1.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 145, column 1 - line 145, column 63): " + [v.constructor.name, v1.constructor.name]);
   };
 };
 var maybeInitializeGlobalVars = function(er) {
@@ -28289,7 +28292,7 @@ var dealWithLoops = function(er) {
     return function(t) {
       return function(wStart) {
         return function(wEnd) {
-          return function __do4() {
+          return function __do3() {
             var varMap = liftEffect2(read(er.variables))();
             var seqMap = liftEffect2(read(er.sequences))();
             var ls = collectLoops(p);
@@ -28308,7 +28311,7 @@ var whatDoINeedToDoThisRenderFrame = function(er) {
     return function(t) {
       return function(cycleStart) {
         return function(cycleEnd) {
-          return function __do4() {
+          return function __do3() {
             maybeInitializeGlobalVars(er)(p)();
             return dealWithLoops(er)(p)(t)(cycleStart)(cycleEnd)();
           };
@@ -28320,7 +28323,7 @@ var whatDoINeedToDoThisRenderFrame = function(er) {
 var renderStandalone = function(er) {
   return function(wd) {
     return function(seEngine) {
-      return function __do4() {
+      return function __do3() {
         var t = nowDateTime();
         var prevW = read(er.wEnd)();
         var futureTime = fromMaybe(t)(adjust3(400)(t));

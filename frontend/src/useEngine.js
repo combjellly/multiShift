@@ -16,7 +16,7 @@ export function useEngine() {
   // Expose these refs for MIDI processing if necessary, or keep them local
   const engineRef = useRef(null);
 
-  const launchNow = (sampleMap = "test") => {
+  const launchNow = (sampleMap = "https://raw.githubusercontent.com/combjellly/shift/main/samples") => {
     if (engineState.hasLaunched) return;
     
     // Unlock Audio Context on first gesture
@@ -29,7 +29,7 @@ export function useEngine() {
     }
 
     const er = launch();
-    const wd = launchDirt(sampleMap);
+    const wd = launchDirt(sampleMap)();
     const se = launchSynthEngine();
 
     setEngineState({

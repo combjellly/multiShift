@@ -67,9 +67,10 @@ launch = do
   pure er
 
 --launched from js end. provides a wd instance
-launchDirt :: Effect WebDirt
-launchDirt = do
-  wd <- newWebDirt { sampleMapUrl: "samples/sampleMap.json", sampleFolder: "samples" }
+launchDirt :: String -> Effect WebDirt
+launchDirt baseUrl = do
+  let mapUrl = baseUrl <> "/sampleMap.json"
+  wd <- newWebDirt { sampleMapUrl: mapUrl, sampleFolder: baseUrl }
   initializeWebAudio wd
   pure wd
 
