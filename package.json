@@ -4,5 +4,8 @@
     "esbuild-darwin-64": "^0.14.42",
     "esbuild-wasm": "^0.14.42",
     "spago": "^0.20.9"
+  },
+  "scripts": {
+    "build-core": "spago bundle --bundle-type module --outfile frontend/src/shift.js"
   }
 }

@@ -18,7 +18,7 @@
 
   <body onload="" >
     <script type="module">
-    import { launch, launchDirt, renderStandalone, parse } from "./index.js";
+    import { launch, launchDirt, launchSynthEngine, renderStandalone, parse } from "./index.js";
 
     function unlockAudioContext(audioCtx) {
       if (audioCtx.state !== "suspended") return;
@@ -45,6 +45,7 @@
 
       window._engineRecord = launch();
       window._webDirt = launchDirt(sampleMap);
+      window._synthEngine = launchSynthEngine();
       window._hasLaunched = true;
 
       if (typeof navigator.requestMIDIAccess === "function") {
@@ -73,7 +74,7 @@
     }
 
     function render() {
-      const disp = renderStandalone(_engineRecord)(_webDirt)();
+      const disp = renderStandalone(_engineRecord)(_webDirt)(_synthEngine)();
 
       if (typeof navigator.requestMIDIAccess === "function") {
         playMidiEvents(disp);

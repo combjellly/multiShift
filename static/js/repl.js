@@ -106,9 +106,10 @@ document.addEventListener("DOMContentLoaded", function () {
     window.openSidebar = openSidebar;  // Make sure openSidebar is globally accessible
     window.closeSidebar = closeSidebar; // Same for closeSidebar
 
-    //readURL();
-    //loadLocalStorage();
-    randPres();
+    loadLocalStorage();
+    readURL();
+
+    //randPres();
 });
 
 function hexToHsl(hex) {

@@ -26,6 +26,7 @@ import Data.Newtype (unwrap)
 import Data.Maybe
 import Data.Tuple
 import WebDirt
+import SynthEngine as SE
 import Data.Traversable
 import Data.Map as Map
 import Data.Int (toNumber,ceil,fromString,round)
@@ -72,6 +73,12 @@ launchDirt = do
   initializeWebAudio wd
   pure wd
 
+launchSynthEngine :: Effect SE.SynthEngine
+launchSynthEngine = do
+  se <- SE.newSynthEngine {}
+  SE.initializeWebAudio se
+  pure se
+
 -- 
 parse :: EngineRecord -> String -> Effect String
 parse er x = case runParser x program of
@@ -80,8 +87,8 @@ parse er x = case runParser x program of
         write p er.programRef
         pure "success"
 
-renderStandalone :: EngineRecord -> WebDirt -> Effect String
-renderStandalone er wd = do 
+renderStandalone :: EngineRecord -> WebDirt -> SE.SynthEngine -> Effect String
+renderStandalone er wd seEngine = do 
   t <- nowDateTime 
   prevW <- read $ er.wEnd 
   let futureTime = fromMaybe t $ adjust (Milliseconds 400.00) t -- :: Milliseconds
@@ -96,7 +103,7 @@ renderStandalone er wd = do
     p <- liftEffect $ read $ er.programRef
     variables <- liftEffect $ read $ er.variables
     se <- whatDoINeedToDoThisRenderFrame er p t cycleStart cycleEnd -- read and write variable refs + renderEvents 
-    play wd se
+    play wd seEngine se
     pure $ show se
   else
     pure $ show "sleepy time"
@@ -420,22 +427,26 @@ varRead x m= do
 
 
 --- NEED TO CHANGE THIS TO ADD FUNCTIONS
-play :: WebDirt -> List SampleEvent -> Effect Unit
-play wd es = for_ es \i -> do
+play :: WebDirt -> SE.SynthEngine -> List SampleEvent -> Effect Unit
+play wd synth es = for_ es \i -> do
   let gainFixed = gainFix (i.gain/100.0) -- webdirt requires that sounds range from 0-2. 1 is normal volume
   let panFixed = panFix (i.pan/100.0) -- 0 left 100 right
-  if i.note >= 50.0 then do
-    let rNote = 50.0
-    playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:rNote, pan:panFixed, cut:i.cut }
+  if i.s == "synth" then do
+    SE.playSynth synth { whenPosix: i.whenPosix, note: i.note, gain: gainFixed, duration: 0.5, type: "sine" }
     pure unit
-    else do 
-    if i.note <= -50.0 then do
-      let rNote = -50.0
-      playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:rNote, pan:panFixed , cut:i.cut}
+  else do
+    if i.note >= 50.0 then do
+      let rNote = 50.0
+      playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:rNote, pan:panFixed, cut:i.cut }
       pure unit
-    else do 
-      playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:i.note, pan:panFixed , cut:i.cut}
-      pure unit
+      else do 
+      if i.note <= -50.0 then do
+        let rNote = -50.0
+        playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:rNote, pan:panFixed , cut:i.cut}
+        pure unit
+      else do 
+        playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:i.note, pan:panFixed , cut:i.cut}
+        pure unit
 
 --adjusted gain to go to 200!
 gainFix :: Number -> Number

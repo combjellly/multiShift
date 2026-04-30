@@ -3672,7 +3672,7 @@ var random = Math.random;
 // output/Effect.Random/index.js
 var randomInt = function(low) {
   return function(high) {
-    return function __do3() {
+    return function __do4() {
       var n = random();
       var asNumber = (toNumber(high) - toNumber(low) + 1) * n + toNumber(low);
       return floor2(asNumber);
@@ -27524,9 +27524,61 @@ var midiEventHandler = function(t) {
   };
 };
 
+// output/SynthEngine/foreign.js
+var newSynthEngine = function(args) {
+  return function() {
+    return {
+      audioContext: args.audioContext || null,
+      posixOffset: 0
+    };
+  };
+};
+var initializeWebAudio = function(synth) {
+  return function() {
+    if (!synth.audioContext) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        synth.audioContext = new AudioContext();
+      }
+    }
+    if (synth.audioContext) {
+      synth.posixOffset = Date.now() / 1e3 - synth.audioContext.currentTime;
+    }
+  };
+};
+var playSynth = function(synth) {
+  return function(msg) {
+    return function() {
+      if (!synth.audioContext) return;
+      let playTime = msg.whenPosix - synth.posixOffset;
+      if (playTime < synth.audioContext.currentTime) {
+        playTime = synth.audioContext.currentTime;
+      }
+      const osc = synth.audioContext.createOscillator();
+      const gainNode = synth.audioContext.createGain();
+      const freq = 440 * Math.pow(2, (msg.note - 69) / 12);
+      osc.frequency.value = freq;
+      osc.type = msg.type || "sine";
+      const maxGain = msg.gain || 1;
+      const duration = msg.duration || 0.5;
+      const attack = 0.01;
+      const release = 0.05;
+      gainNode.gain.setValueAtTime(0, playTime);
+      gainNode.gain.linearRampToValueAtTime(maxGain, playTime + attack);
+      const releaseStartTime = Math.max(playTime + attack, playTime + duration - release);
+      gainNode.gain.setValueAtTime(maxGain, releaseStartTime);
+      gainNode.gain.linearRampToValueAtTime(0, playTime + duration);
+      osc.connect(gainNode);
+      gainNode.connect(synth.audioContext.destination);
+      osc.start(playTime);
+      osc.stop(playTime + duration);
+    };
+  };
+};
+
 // output/WebDirt/foreign.js
 var newWebDirt = (args) => () => new WebDirt.WebDirt(args);
-var initializeWebAudio = (wd) => () => wd.initializeWebAudio();
+var initializeWebAudio2 = (wd) => () => wd.initializeWebAudio();
 var playSample = (wd) => (msg) => () => wd.playSample(msg);
 
 // output/Main/index.js
@@ -27598,7 +27650,7 @@ var varRead = function(x) {
         return 0;
       }
       ;
-      throw new Error("Failed pattern match at Main (line 415, column 16 - line 417, column 32): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 422, column 16 - line 424, column 32): " + [v.constructor.name]);
     }();
     return varOut;
   };
@@ -27619,7 +27671,7 @@ var readSequenceNumber = function(i) {
               return i;
             }
             ;
-            throw new Error("Failed pattern match at Main (line 401, column 36 - line 405, column 47): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Main (line 408, column 36 - line 412, column 47): " + [v1.constructor.name]);
           }();
           return number;
         }
@@ -27628,7 +27680,7 @@ var readSequenceNumber = function(i) {
           return i;
         }
         ;
-        throw new Error("Failed pattern match at Main (line 398, column 15 - line 408, column 30): " + [v.constructor.name]);
+        throw new Error("Failed pattern match at Main (line 405, column 15 - line 415, column 30): " + [v.constructor.name]);
       }();
       return list;
     };
@@ -27673,7 +27725,7 @@ var resolveExpression = function(v) {
         return v.value0;
       }
       ;
-      throw new Error("Failed pattern match at Main (line 384, column 1 - line 384, column 102): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 391, column 1 - line 391, column 102): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
     };
   };
 };
@@ -27686,7 +27738,7 @@ var performPlay = function(er) {
       return function(sample) {
         return function(i) {
           return function(params) {
-            return function __do3() {
+            return function __do4() {
               var varMap = liftEffect2(read(er.variables))();
               var sequenceMap = liftEffect2(read(er.sequences))();
               var sampleNum = resolveExpression(i)(varMap)(sequenceMap);
@@ -27709,7 +27761,7 @@ var performMidiPlay = function(er) {
       return function(sample) {
         return function(i) {
           return function(params) {
-            return function __do3() {
+            return function __do4() {
               var varMap = liftEffect2(read(er.variables))();
               var sequenceMap = liftEffect2(read(er.sequences))();
               var channel = resolveExpression(i)(varMap)(sequenceMap);
@@ -27730,7 +27782,7 @@ var performMidi = function(er) {
     return function(nowCycles) {
       return function(channel) {
         return function(params) {
-          return function __do3() {
+          return function __do4() {
             var varMap = liftEffect2(read(er.variables))();
             var sequenceMap = liftEffect2(read(er.sequences))();
             var midiChannel = resolveExpression(channel)(varMap)(sequenceMap);
@@ -27753,23 +27805,23 @@ var parse = function(er) {
     }
     ;
     if (v instanceof Right) {
-      return function __do3() {
+      return function __do4() {
         write(v.value0)(er.programRef)();
         return "success";
       };
     }
     ;
-    throw new Error("Failed pattern match at Main (line 77, column 14 - line 81, column 23): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 84, column 14 - line 88, column 23): " + [v.constructor.name]);
   };
 };
 var panFix = function(p) {
-  var $125 = p >= 1;
-  if ($125) {
+  var $126 = p >= 1;
+  if ($126) {
     return 1;
   }
   ;
-  var $126 = p <= 0;
-  if ($126) {
+  var $127 = p <= 0;
+  if ($127) {
     return 0;
   }
   ;
@@ -27789,25 +27841,30 @@ var loopList = function(v) {
     return Nil.value;
   }
   ;
-  throw new Error("Failed pattern match at Main (line 207, column 1 - line 207, column 33): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Main (line 214, column 1 - line 214, column 33): " + [v.constructor.name]);
 };
 var limitLoopTime = function(n) {
-  var $133 = n <= 35e-4;
-  if ($133) {
+  var $134 = n <= 35e-4;
+  if ($134) {
     return 35e-4;
   }
   ;
   return n;
 };
-var launchDirt = function __do() {
+var launchSynthEngine = function __do() {
+  var se = newSynthEngine({})();
+  initializeWebAudio(se)();
+  return se;
+};
+var launchDirt = function __do2() {
   var wd = newWebDirt({
     sampleMapUrl: "samples/sampleMap.json",
     sampleFolder: "samples"
   })();
-  initializeWebAudio(wd)();
+  initializeWebAudio2(wd)();
   return wd;
 };
-var launch = function __do2() {
+var launch = function __do3() {
   var launchDateTime = nowDateTime();
   var tempo = $$new(launchDateTime)();
   var wStart = $$new(launchDateTime)();
@@ -27833,75 +27890,91 @@ var launch = function __do2() {
   return er;
 };
 var gainFix = function(g) {
-  var $134 = g >= 2;
-  if ($134) {
+  var $135 = g >= 2;
+  if ($135) {
     return 2;
   }
   ;
-  var $135 = g <= 0;
-  if ($135) {
+  var $136 = g <= 0;
+  if ($136) {
     return 0;
   }
   ;
   return g;
 };
 var play = function(wd) {
-  return function(es) {
-    return for_2(es)(function(i) {
-      var gainFixed = gainFix(i.gain / 100);
-      var panFixed = panFix(i.pan / 100);
-      var $136 = i.note >= 50;
-      if ($136) {
-        return function __do3() {
+  return function(synth) {
+    return function(es) {
+      return for_2(es)(function(i) {
+        var gainFixed = gainFix(i.gain / 100);
+        var panFixed = panFix(i.pan / 100);
+        var $137 = i.s === "synth";
+        if ($137) {
+          return function __do4() {
+            playSynth(synth)({
+              whenPosix: i.whenPosix,
+              note: i.note,
+              gain: gainFixed,
+              duration: 0.5,
+              type: "sine"
+            })();
+            return unit;
+          };
+        }
+        ;
+        var $138 = i.note >= 50;
+        if ($138) {
+          return function __do4() {
+            playSample(wd)({
+              s: i.s,
+              n: i.n,
+              whenPosix: i.whenPosix,
+              gain: gainFixed,
+              note: 50,
+              pan: panFixed,
+              cut: i.cut
+            })();
+            return unit;
+          };
+        }
+        ;
+        var $139 = i.note <= -50;
+        if ($139) {
+          var rNote = -50;
+          return function __do4() {
+            playSample(wd)({
+              s: i.s,
+              n: i.n,
+              whenPosix: i.whenPosix,
+              gain: gainFixed,
+              note: rNote,
+              pan: panFixed,
+              cut: i.cut
+            })();
+            return unit;
+          };
+        }
+        ;
+        return function __do4() {
           playSample(wd)({
             s: i.s,
             n: i.n,
             whenPosix: i.whenPosix,
             gain: gainFixed,
-            note: 50,
+            note: i.note,
             pan: panFixed,
             cut: i.cut
           })();
           return unit;
         };
-      }
-      ;
-      var $137 = i.note <= -50;
-      if ($137) {
-        var rNote = -50;
-        return function __do3() {
-          playSample(wd)({
-            s: i.s,
-            n: i.n,
-            whenPosix: i.whenPosix,
-            gain: gainFixed,
-            note: rNote,
-            pan: panFixed,
-            cut: i.cut
-          })();
-          return unit;
-        };
-      }
-      ;
-      return function __do3() {
-        playSample(wd)({
-          s: i.s,
-          n: i.n,
-          whenPosix: i.whenPosix,
-          gain: gainFixed,
-          note: i.note,
-          pan: panFixed,
-          cut: i.cut
-        })();
-        return unit;
-      };
-    });
+      });
+    };
   };
 };
 var fillMaps = function(er) {
   return function(s) {
     return function(n) {
-      return function __do3() {
+      return function __do4() {
         var varMap = liftEffect2(read(er.variables))();
         var origMap = liftEffect2(read(er.originalVariables))();
         var newMap = insert3(s)(n)(varMap);
@@ -27916,8 +27989,8 @@ var cycleIntervalList = function(wStart) {
   return function(wEnd) {
     return function(n) {
       var pFirst = toNumber(ceil2(wStart / n)) * n;
-      var $138 = pFirst < wEnd;
-      if ($138) {
+      var $140 = pFirst < wEnd;
+      if ($140) {
         return new Cons(pFirst, cycleIntervalList(pFirst + n)(wEnd)(n));
       }
       ;
@@ -27951,7 +28024,7 @@ var crunchVar = function(m) {
 };
 var performVariableA = function(er) {
   return function(v) {
-    return function __do3() {
+    return function __do4() {
       var varMap = liftEffect2(read(er.variables))();
       var sequenceMap = liftEffect2(read(er.sequences))();
       var newmap = crunchVar(varMap)(sequenceMap)(new VariableA(v.value0, v.value1));
@@ -27963,7 +28036,7 @@ var performVariableA = function(er) {
 var performListAction = function(er) {
   return function(la) {
     return function(nowCycles) {
-      return function __do3() {
+      return function __do4() {
         var xs = traverse2(performAction(er)(nowCycles))(la)();
         return concat(xs);
       };
@@ -27974,7 +28047,7 @@ var performAction = function(v) {
   return function(v1) {
     return function(v2) {
       if (v2 instanceof Play) {
-        return function __do3() {
+        return function __do4() {
           var t = read(v.tempo)();
           var sampleEvent = performPlay(v)(t)(v1)(v2.value0)(v2.value1)(v2.value2)();
           return sampleEvent;
@@ -27982,7 +28055,7 @@ var performAction = function(v) {
       }
       ;
       if (v2 instanceof MidiPlay) {
-        return function __do3() {
+        return function __do4() {
           var t = read(v.tempo)();
           var midiEvent = performMidiPlay(v)(t)(v1)("midimidmidi")(v2.value0)(v2.value1)();
           return midiEvent;
@@ -27994,7 +28067,7 @@ var performAction = function(v) {
       }
       ;
       if (v2 instanceof RandomN) {
-        return function __do3() {
+        return function __do4() {
           var varMap = liftEffect2(read(v.variables))();
           var seqMap = liftEffect2(read(v.sequences))();
           var rX = resolveExpression(v2.value1)(varMap)(seqMap);
@@ -28008,7 +28081,7 @@ var performAction = function(v) {
       }
       ;
       if (v2 instanceof RandomList) {
-        return function __do3() {
+        return function __do4() {
           var varMap = liftEffect2(read(v.variables))();
           var seqMap = liftEffect2(read(v.sequences))();
           var resolvedList = map12(function(n) {
@@ -28020,7 +28093,7 @@ var performAction = function(v) {
             var v4 = index(resolvedList)(randInt);
             if (v4 instanceof Just) {
               var newmap = insert3(v2.value0)(v4.value0)(varMap);
-              return function __do4() {
+              return function __do5() {
                 write(newmap)(v.variables)();
                 return Nil.value;
               };
@@ -28030,14 +28103,14 @@ var performAction = function(v) {
               return pure5(Nil.value);
             }
             ;
-            throw new Error("Failed pattern match at Main (line 285, column 20 - line 292, column 39): " + [v4.constructor.name]);
+            throw new Error("Failed pattern match at Main (line 292, column 20 - line 299, column 39): " + [v4.constructor.name]);
           }();
           return randLookUp();
         };
       }
       ;
       if (v2 instanceof Sequence) {
-        return function __do3() {
+        return function __do4() {
           var varMap = liftEffect2(read(v.variables))();
           var sequenceMap = liftEffect2(read(v.sequences))();
           var resolvedList = map12(function(n) {
@@ -28050,7 +28123,7 @@ var performAction = function(v) {
       }
       ;
       if (v2 instanceof Conditional) {
-        return function __do3() {
+        return function __do4() {
           var varMap = liftEffect2(read(v.variables))();
           var seqMap = liftEffect2(read(v.sequences))();
           var rV = resolveExpression(v2.value0)(varMap)(seqMap);
@@ -28082,8 +28155,8 @@ var performAction = function(v) {
             ;
             return false;
           }();
-          var $175 = condBool === true;
-          if ($175) {
+          var $177 = condBool === true;
+          if ($177) {
             return performListAction(v)(v2.value3)(v1)();
           }
           ;
@@ -28091,7 +28164,7 @@ var performAction = function(v) {
         };
       }
       ;
-      throw new Error("Failed pattern match at Main (line 251, column 1 - line 251, column 79): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 258, column 1 - line 258, column 79): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
     };
   };
 };
@@ -28103,7 +28176,7 @@ var performLoop = function(er) {
 var compareOriginalVariable = function(er) {
   return function(s) {
     return function(n) {
-      return function __do3() {
+      return function __do4() {
         var varMap = liftEffect2(read(er.variables))();
         var origMap = liftEffect2(read(er.originalVariables))();
         var originalValue = function() {
@@ -28116,10 +28189,10 @@ var compareOriginalVariable = function(er) {
             return 2012;
           }
           ;
-          throw new Error("Failed pattern match at Main (line 172, column 25 - line 174, column 44): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at Main (line 179, column 25 - line 181, column 44): " + [v.constructor.name]);
         }();
-        var $188 = n === originalValue;
-        if ($188) {
+        var $190 = n === originalValue;
+        if ($190) {
           return write(varMap)(er.variables)();
         }
         ;
@@ -28134,7 +28207,7 @@ var compareOriginalVariable = function(er) {
 var updateGlobalVariable = function(v) {
   return function(v1) {
     if (v1 instanceof VariableGlobal) {
-      return function __do3() {
+      return function __do4() {
         var varMap = liftEffect2(read(v.variables))();
         var seqMap = liftEffect2(read(v.sequences))();
         var resolvedNumber = resolveExpression(v1.value1)(varMap)(seqMap);
@@ -28148,14 +28221,14 @@ var updateGlobalVariable = function(v) {
             return fillMaps(v)(v1.value0)(resolvedNumber);
           }
           ;
-          throw new Error("Failed pattern match at Main (line 143, column 16 - line 145, column 57): " + [v2.constructor.name]);
+          throw new Error("Failed pattern match at Main (line 150, column 16 - line 152, column 57): " + [v2.constructor.name]);
         }();
         return newMap();
       };
     }
     ;
     if (v1 instanceof GlobalSequence) {
-      return function __do3() {
+      return function __do4() {
         var varMap = liftEffect2(read(v.variables))();
         var sequenceMap = liftEffect2(read(v.sequences))();
         var resolvedList = map12(function(n) {
@@ -28170,7 +28243,7 @@ var updateGlobalVariable = function(v) {
       return pure5(unit);
     }
     ;
-    throw new Error("Failed pattern match at Main (line 137, column 1 - line 137, column 63): " + [v.constructor.name, v1.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 144, column 1 - line 144, column 63): " + [v.constructor.name, v1.constructor.name]);
   };
 };
 var maybeInitializeGlobalVars = function(er) {
@@ -28186,7 +28259,7 @@ var dealWithLoops = function(er) {
     return function(t) {
       return function(wStart) {
         return function(wEnd) {
-          return function __do3() {
+          return function __do4() {
             var varMap = liftEffect2(read(er.variables))();
             var seqMap = liftEffect2(read(er.sequences))();
             var ls = collectLoops(p);
@@ -28205,7 +28278,7 @@ var whatDoINeedToDoThisRenderFrame = function(er) {
     return function(t) {
       return function(cycleStart) {
         return function(cycleEnd) {
-          return function __do3() {
+          return function __do4() {
             maybeInitializeGlobalVars(er)(p)();
             return dealWithLoops(er)(p)(t)(cycleStart)(cycleEnd)();
           };
@@ -28216,26 +28289,28 @@ var whatDoINeedToDoThisRenderFrame = function(er) {
 };
 var renderStandalone = function(er) {
   return function(wd) {
-    return function __do3() {
-      var t = nowDateTime();
-      var prevW = read(er.wEnd)();
-      var futureTime = fromMaybe(t)(adjust3(400)(t));
-      var $198 = lessThanOrEq1(prevW)(futureTime);
-      if ($198) {
-        var wE = fromMaybe(t)(adjust3(500)(prevW));
-        write(prevW)(er.wStart)();
-        write(wE)(er.wEnd)();
-        var t1 = read(er.tempo)();
-        var cycleStart = timeToCount(t1)(prevW);
-        var cycleEnd = timeToCount(t1)(wE);
-        var p = liftEffect2(read(er.programRef))();
-        var variables = liftEffect2(read(er.variables))();
-        var se = whatDoINeedToDoThisRenderFrame(er)(p)(t1)(cycleStart)(cycleEnd)();
-        play(wd)(se)();
-        return show4(se);
-      }
-      ;
-      return show23("sleepy time");
+    return function(seEngine) {
+      return function __do4() {
+        var t = nowDateTime();
+        var prevW = read(er.wEnd)();
+        var futureTime = fromMaybe(t)(adjust3(400)(t));
+        var $200 = lessThanOrEq1(prevW)(futureTime);
+        if ($200) {
+          var wE = fromMaybe(t)(adjust3(500)(prevW));
+          write(prevW)(er.wStart)();
+          write(wE)(er.wEnd)();
+          var t1 = read(er.tempo)();
+          var cycleStart = timeToCount(t1)(prevW);
+          var cycleEnd = timeToCount(t1)(wE);
+          var p = liftEffect2(read(er.programRef))();
+          var variables = liftEffect2(read(er.variables))();
+          var se = whatDoINeedToDoThisRenderFrame(er)(p)(t1)(cycleStart)(cycleEnd)();
+          play(wd)(seEngine)(se)();
+          return show4(se);
+        }
+        ;
+        return show23("sleepy time");
+      };
     };
   };
 };
@@ -28250,6 +28325,7 @@ export {
   getLoopTimes,
   launch,
   launchDirt,
+  launchSynthEngine,
   limitLoopTime,
   loopList,
   main,

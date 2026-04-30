@@ -1,4 +1,4 @@
-var presets = {
+export const presets = {
 
 	script0: `-- slowcore
 
