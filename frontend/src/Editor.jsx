@@ -137,6 +137,7 @@ export function Editor({ code, onChange, onEvaluate }) {
   const editorRef = useRef(null);
   const viewRef = useRef(null);
   const ydocRef = useRef(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize CodeMirror and Yjs only once
   useEffect(() => {
@@ -146,77 +147,88 @@ export function Editor({ code, onChange, onEvaluate }) {
     ydocRef.current = ydoc;
     const ytext = ydoc.getText('codemirror');
 
-    // Create Firebase provider
+    // Create Firebase provider — wait for it to load existing DB state
+    // before mounting the editor so the last session is visible immediately.
     const provider = new FirebaseProvider(database, 'shift_collaboration', ydoc);
 
-    const onEvaluateKey = keymap.of([{
-      key: "Shift-Space",
-      run: (view) => {
-        onEvaluate(view.state.doc.toString());
-        return true;
-      }
-    }]);
+    let view = null;
+    let cancelled = false;
 
-    const state = EditorState.create({
-      doc: ytext.toString(),
-      extensions: [
-        keymap.of([indentWithTab, ...defaultKeymap]),
-        shiftLanguage,
-        syntaxHighlighting(shiftHighlightStyle),
-        mutePlugin,
-        yCollab(ytext, null), // Collaborative editing extension
-        onEvaluateKey,
-        EditorView.lineWrapping,
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            onChange(update.state.doc.toString());
-          }
-        }),
-        EditorView.theme({
-          "&": {
-            height: "100%",
-            backgroundColor: "transparent",
-            color: "var(--text-main)",
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: "1.1rem",
-            outline: "none !important"
-          },
-          ".cm-content": {
-            caretColor: "var(--accent)",
-            paddingLeft: "42px"
-          },
-          "&.cm-focused .cm-cursor": {
-            borderLeftColor: "var(--accent)"
-          },
-          "&.cm-focused .cm-selectionBackground, ::selection": {
-            backgroundColor: "rgba(203, 166, 247, 0.3)"
-          },
-          ".every-block": {
-             borderLeft: "2px solid transparent",
-             paddingLeft: "10px",
-             marginLeft: "-12px",
-             transition: "border-color 0.2s",
-             position: "relative"
-          },
-          ".every-block:hover": {
-             borderLeftColor: "var(--accent)"
-          },
-          ".every-block.commented": {
-             opacity: "0.5",
-             borderLeftColor: "#f38ba8"
-          }
-        })
-      ]
-    });
+    provider.ready.then(() => {
+      if (cancelled || !editorRef.current) return;
 
-    const view = new EditorView({
-      state,
-      parent: editorRef.current
+      const onEvaluateKey = keymap.of([{
+        key: "Shift-Space",
+        run: (v) => {
+          onEvaluate(v.state.doc.toString());
+          return true;
+        }
+      }]);
+
+      const state = EditorState.create({
+        doc: ytext.toString(),
+        extensions: [
+          keymap.of([indentWithTab, ...defaultKeymap]),
+          shiftLanguage,
+          syntaxHighlighting(shiftHighlightStyle),
+          mutePlugin,
+          yCollab(ytext, null),
+          onEvaluateKey,
+          EditorView.lineWrapping,
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              onChange(update.state.doc.toString());
+            }
+          }),
+          EditorView.theme({
+            "&": {
+              height: "100%",
+              backgroundColor: "transparent",
+              color: "var(--text-main)",
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: "1.1rem",
+              outline: "none !important"
+            },
+            ".cm-content": {
+              caretColor: "var(--accent)",
+              paddingLeft: "42px"
+            },
+            "&.cm-focused .cm-cursor": {
+              borderLeftColor: "var(--accent)"
+            },
+            "&.cm-focused .cm-selectionBackground, ::selection": {
+              backgroundColor: "rgba(203, 166, 247, 0.3)"
+            },
+            ".every-block": {
+               borderLeft: "2px solid transparent",
+               paddingLeft: "10px",
+               marginLeft: "-12px",
+               transition: "border-color 0.2s",
+               position: "relative"
+            },
+            ".every-block:hover": {
+               borderLeftColor: "var(--accent)"
+            },
+            ".every-block.commented": {
+               opacity: "0.5",
+               borderLeftColor: "#f38ba8"
+            }
+          })
+        ]
+      });
+
+      view = new EditorView({
+        state,
+        parent: editorRef.current
+      });
+      viewRef.current = view;
+      setIsLoading(false);
     });
-    viewRef.current = view;
 
     return () => {
-      view.destroy();
+      cancelled = true;
+      if (view) view.destroy();
+      provider.destroy();
       ydoc.destroy();
     };
   }, []); // Empty dependency array -> runs once
@@ -236,6 +248,25 @@ export function Editor({ code, onChange, onEvaluate }) {
   }, [code]);
 
   return (
-    <div className="editor-container" ref={editorRef} />
+    <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+      {isLoading && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--text-muted, #6c7086)',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '0.9rem',
+          letterSpacing: '0.05em',
+          zIndex: 10,
+          pointerEvents: 'none',
+        }}>
+          loading last session…
+        </div>
+      )}
+      <div className="editor-container" ref={editorRef} style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s' }} />
+    </div>
   );
 }

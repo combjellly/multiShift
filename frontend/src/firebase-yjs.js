@@ -1,4 +1,4 @@
-import { onChildAdded, push, ref } from 'firebase/database';
+import { onChildAdded, get, push, ref, query, orderByKey, limitToLast } from 'firebase/database';
 import * as Y from 'yjs';
 
 // Helper to convert Uint8Array to Base64 string
@@ -26,30 +26,70 @@ export class FirebaseProvider {
   constructor(database, path, ydoc) {
     this.ydoc = ydoc;
     this.updatesRef = ref(database, path);
+    this._seenKeys = new Set();
+    this._destroyed = false;
 
-    // Send local changes to Firebase
+    // Expose a promise that resolves once all existing DB entries are applied.
+    // The editor waits on this before rendering so users always see the last state.
+    this.ready = this._loadExisting().then(() => {
+      if (this._destroyed) return;
+      this._subscribeToNew();
+    });
+
+    // Send local changes to Firebase (skip updates that arrived from Firebase)
     ydoc.on('update', (update, origin) => {
-      // Don't bounce back updates we just received
-      if (origin !== this) {
+      if (origin !== this && !this._destroyed) {
         const base64Update = uint8ArrayToBase64(update);
         push(this.updatesRef, base64Update).catch(err => {
-            console.error("Firebase push failed:", err);
+          console.error('Firebase push failed:', err);
         });
       }
     });
+  }
 
-    // Receive external changes from Firebase
-    onChildAdded(this.updatesRef, (snapshot) => {
+  // Fetch ALL existing updates from Firebase and apply them in order.
+  async _loadExisting() {
+    try {
+      const snapshot = await get(this.updatesRef);
+      if (!snapshot.exists()) return;
+
+      snapshot.forEach(child => {
+        const base64Update = child.val();
+        this._seenKeys.add(child.key);
+        if (typeof base64Update === 'string') {
+          try {
+            const update = base64ToUint8Array(base64Update);
+            Y.applyUpdate(this.ydoc, update, this);
+          } catch (e) {
+            console.error('Failed to apply existing update from Firebase:', e);
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Failed to load existing state from Firebase:', e);
+    }
+  }
+
+  // Stream only updates that arrive AFTER the initial load.
+  _subscribeToNew() {
+    this._unsubscribe = onChildAdded(this.updatesRef, (snapshot) => {
+      // Skip keys we already applied during _loadExisting
+      if (this._seenKeys.has(snapshot.key)) return;
+
       const base64Update = snapshot.val();
       if (typeof base64Update === 'string') {
         try {
           const update = base64ToUint8Array(base64Update);
-          // Apply update and mark 'this' as the origin so we don't rebroadcast it
           Y.applyUpdate(this.ydoc, update, this);
         } catch (e) {
-          console.error("Failed to apply update from Firebase:", e);
+          console.error('Failed to apply realtime update from Firebase:', e);
         }
       }
     });
+  }
+
+  destroy() {
+    this._destroyed = true;
+    if (this._unsubscribe) this._unsubscribe();
   }
 }
