@@ -15,6 +15,18 @@ export function useEngine() {
 
   // Expose these refs for MIDI processing if necessary, or keep them local
   const engineRef = useRef(null);
+  const eventListeners = useRef(new Set());
+
+  const subscribeToEvents = (fn) => {
+    eventListeners.current.add(fn);
+    return () => eventListeners.current.delete(fn);
+  };
+
+  const dispatchVisualEvent = (event) => {
+    eventListeners.current.forEach(listener => {
+      try { listener(event); } catch (e) { console.error(e); }
+    });
+  };
 
   const launchNow = (sampleMap = "https://raw.githubusercontent.com/combjellly/shift/main/samples") => {
     if (engineState.hasLaunched) return;
@@ -31,6 +43,46 @@ export function useEngine() {
     const er = launch();
     const wd = launchDirt(sampleMap)();
     const se = launchSynthEngine();
+
+    // Hook WebDirt sample playback
+    if (wd && typeof wd.playSample === 'function') {
+      const origPlaySample = wd.playSample.bind(wd);
+      wd.playSample = function(msg, latency) {
+        dispatchVisualEvent({
+          s: msg.s || "sample",
+          n: msg.n || 0,
+          note: msg.note !== undefined ? msg.note : 0,
+          gain: msg.gain !== undefined ? msg.gain : 1,
+          pan: msg.pan !== undefined ? msg.pan : 0.5,
+          begin: msg.begin !== undefined ? msg.begin : 0,
+          end: msg.end !== undefined ? msg.end : 1,
+          whenPosix: msg.whenPosix,
+          latency: latency !== undefined ? latency : (wd.latency || 0.4),
+          ac: wd.ac,
+          type: 'sample',
+          loopId: msg.loopId !== undefined ? msg.loopId : 0
+        });
+        return origPlaySample(msg, latency);
+      };
+    }
+
+    // Hook Synth playback
+    if (se) {
+      se.onPlay = function(msg) {
+        dispatchVisualEvent({
+          s: "synth",
+          n: 0,
+          note: msg.note !== undefined ? msg.note : 60,
+          gain: msg.gain !== undefined ? msg.gain : 1,
+          pan: 0.5,
+          whenPosix: msg.whenPosix,
+          latency: 0.4,
+          ac: se.audioContext,
+          type: 'synth',
+          loopId: msg.loopId !== undefined ? msg.loopId : 0
+        });
+      };
+    }
 
     setEngineState({
       engineRecord: er,
@@ -64,6 +116,7 @@ export function useEngine() {
     const { er } = engineRef.current;
     const res = parse(er)(code)();
     setStatus(res);
+    dispatchVisualEvent({ type: 'compile', code });
     setEngineState(prev => ({ ...prev, isPlaying: true }));
   };
 
@@ -72,6 +125,7 @@ export function useEngine() {
     const { er } = engineRef.current;
     const res = parse(er)("")();
     setStatus(res);
+    dispatchVisualEvent({ type: 'stop' });
     setEngineState(prev => ({ ...prev, isPlaying: false }));
   };
 
@@ -87,6 +141,8 @@ export function useEngine() {
     stop,
     status,
     isPlaying: engineState.isPlaying,
-    hasLaunched: engineState.hasLaunched
+    hasLaunched: engineState.hasLaunched,
+    subscribeToEvents,
+    audioContext: engineState.webDirt?.ac || engineState.synthEngine?.audioContext
   };
 }

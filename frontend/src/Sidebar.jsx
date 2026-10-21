@@ -1,13 +1,26 @@
 import React, { useState } from 'react';
+import logoImg from './assets/logo.png';
 
-export function Sidebar({ isOpen, onClose, onThemeChange }) {
+export function Sidebar({ 
+  isOpen, 
+  onClose, 
+  onThemeChange,
+  vizMode,
+  onVizModeChange,
+  vizOpacity,
+  onVizOpacityChange,
+  vizSpeed,
+  onVizSpeedChange,
+  isControllerMode,
+  onToggleControllerMode
+}) {
   const [syncDelay, setSyncDelay] = useState(375);
-  const [themeColor, setThemeColor] = useState("#434153");
+  const [themeColor, setThemeColor] = useState(() => localStorage.getItem("theme") || "#434153");
 
   const handleColorChange = (e) => {
     const newColor = e.target.value;
     setThemeColor(newColor);
-    onThemeChange(newColor);
+    if (onThemeChange) onThemeChange(newColor);
   };
 
   return (
@@ -16,7 +29,7 @@ export function Sidebar({ isOpen, onClose, onThemeChange }) {
       <div className={`sidebar ${isOpen ? 'open' : ''}`}>
         <button className="close-btn" onClick={onClose}>&times;</button>
         <div className="sidebar-content">
-          <img src="/static/img/logo.png" alt="Shift Logo" className="logo" />
+          <img src={logoImg} alt="Shift Logo" className="logo" />
           
           <div className="nav-links">
             <a href="https://shift.nickhernandez.ca/tutorial/intro" target="_blank" rel="noreferrer">About</a>
@@ -25,7 +38,77 @@ export function Sidebar({ isOpen, onClose, onThemeChange }) {
           </div>
 
           <div className="settings-section">
-            <h3>MIDI Sync</h3>
+            <h3>Visualizer</h3>
+            <div className="setting-item">
+              <div className="viz-toggle-pills">
+                <button 
+                  className={`viz-pill-btn ${vizMode === 'circle' ? 'active' : ''}`}
+                  onClick={() => onVizModeChange('circle')}
+                >
+                  Orbit Circle
+                </button>
+                <button 
+                  className={`viz-pill-btn ${vizMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => onVizModeChange('grid')}
+                >
+                  Moving Grid
+                </button>
+              </div>
+            </div>
+
+            <div className="setting-item" style={{ marginTop: '0.85rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.35rem', opacity: 0.8 }}>
+                Opacity ({Math.round(vizOpacity * 100)}%)
+              </label>
+              <div className="viz-toggle-pills">
+                {[0.25, 0.5, 0.75, 1.0].map((val) => (
+                  <button
+                    key={val}
+                    className={`viz-pill-btn mini ${Math.abs(vizOpacity - val) < 0.05 ? 'active' : ''}`}
+                    onClick={() => onVizOpacityChange(val)}
+                  >
+                    {Math.round(val * 100)}%
+                  </button>
+                ))}
+                <button
+                  className={`viz-pill-btn mini ${vizOpacity === 0 ? 'active' : ''}`}
+                  onClick={() => onVizOpacityChange(0)}
+                >
+                  Off
+                </button>
+              </div>
+            </div>
+
+            {vizMode === 'grid' && (
+              <div className="setting-item" style={{ marginTop: '0.85rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.35rem', opacity: 0.8 }}>
+                  Scroll Speed
+                </label>
+                <input 
+                  type="range"
+                  min="200"
+                  max="600"
+                  step="20"
+                  value={vizSpeed}
+                  onChange={(e) => onVizSpeedChange(parseInt(e.target.value))}
+                  className="viz-slider"
+                />
+              </div>
+            )}
+
+            <h3 style={{ marginTop: '1.5rem' }}>Controller Mode</h3>
+            <div className="setting-item">
+              <div className="viz-toggle-pills">
+                <button 
+                  className={`viz-pill-btn ${isControllerMode ? 'active' : ''}`}
+                  onClick={() => onToggleControllerMode && onToggleControllerMode()}
+                >
+                  {isControllerMode ? '🎮 Active' : '🎮 Disabled'}
+                </button>
+              </div>
+            </div>
+
+            <h3 style={{ marginTop: '1.5rem' }}>MIDI Sync</h3>
             <div className="input-group">
               <input 
                 type="number" 
@@ -42,7 +125,12 @@ export function Sidebar({ isOpen, onClose, onThemeChange }) {
             </select>
 
             <h3>Theme</h3>
-            <input type="color" value={themeColor} onChange={handleColorChange} className="color-picker" />
+            <input 
+              type="color" 
+              value={themeColor} 
+              onChange={handleColorChange} 
+              className="color-picker" 
+            />
           </div>
 
           <p className="description">

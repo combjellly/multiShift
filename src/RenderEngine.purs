@@ -61,6 +61,9 @@ type SampleEvent =
   ,velocity :: Number
   ,channel :: Number
   ,duration :: Number
+  ,begin :: Number
+  ,end :: Number
+  ,loopId :: Int
   }
 
 type MidiEvent = 
@@ -73,13 +76,13 @@ type MidiEvent =
     duration :: Number
   }
 
--- sampleMidiNaming :: Tempo -> String -> Number -> Number -> Number -> Number -> Number -> Int -> Number -> Number -> SampleEvent
+-- sampleMidiNaming :: Tempo -> String -> Number -> Number -> Number -> Number -> Number -> Int -> Number -> Number -> Number -> SampleEvent
 
 midiEventHandler :: Tempo -> Number -> Number -> Number -> Number -> Number -> MidiEvent
 midiEventHandler t c wCycles n v d = {channel : c, whenPosix: (whenPosixTime t wCycles), note: n, velocity: v, duration: d}
 
-sampleNaming :: Tempo -> String -> Number -> Number -> Number -> Number -> Number -> Int -> Number -> Number -> Number -> SampleEvent
-sampleNaming t s wCycles sampleNum pitch g p cutGroup channel velocity d= {s:s, n:(round sampleNum), whenPosix: (whenPosixTime t wCycles), gain:g, note:pitch, pan:p, cut:cutGroup, channel:channel, velocity:velocity, duration: d} 
+sampleNaming :: Tempo -> String -> Number -> Number -> Number -> Number -> Number -> Int -> Number -> Number -> Number -> Number -> Number -> Int -> SampleEvent
+sampleNaming t s wCycles sampleNum pitch g p cutGroup channel velocity d begin end loopId = {s:s, n:(round sampleNum), whenPosix: (whenPosixTime t wCycles), gain:g, note:pitch, pan:p, cut:cutGroup, channel:channel, velocity:velocity, duration: d, begin: begin, end: end, loopId: loopId} 
 
 whenPosixTime :: Tempo -> Number -> Number 
 whenPosixTime t wCycles = (unwrap (unInstant (fromDateTime (countToTime t wCycles))))/1000.0

@@ -1,0 +1,23 @@
+CC ?= clang
+CFLAGS ?= -O2 -Wall -DUSE_SDL $(shell sdl2-config --cflags)
+LIBS = $(shell sdl2-config --libs) -lm
+
+SRCS = src/main.c src/audio.c src/samples.c src/parser.c src/interpreter.c src/graphics.c src/visualizer.c src/editor.c src/storage.c
+OBJS = $(SRCS:.c=.pc.o)
+TARGET = shift_psp_desktop
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LIBS)
+
+%.pc.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+
+run: $(TARGET)
+	./$(TARGET)
+
+.PHONY: all clean run

@@ -1,6 +1,14 @@
 import React from 'react';
 
-export function Controls({ isPlaying, onTogglePlay, onEvaluate, onNextPreset, status }) {
+export function Controls({ 
+  isPlaying, 
+  onTogglePlay, 
+  onEvaluate, 
+  onNextPreset, 
+  status,
+  isControllerMode,
+  onToggleControllerMode
+}) {
   return (
     <div className="controls-container">
       <div className="status-display">

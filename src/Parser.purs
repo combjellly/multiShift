@@ -13,6 +13,7 @@ import Data.Int (toNumber)
 import Data.Array (many)
 import Data.List
 import Data.Either
+import Data.Maybe (Maybe(..))
 import AST
 
 
@@ -21,7 +22,7 @@ type P a = ParserT String Identity a
 -- Dictionary
 tokenParser :: GenTokenParser String Identity
 tokenParser = makeTokenParser $ LanguageDef (unGenLanguageDef emptyDef) {
-  reservedNames = ["every","play","if","elif","else","random"],
+  reservedNames = ["every","play","if","elif","else","random","chop"],
   reservedOpNames = [",","=","+","-","*","/","%","[","]",":","==","!=",">","<",">=","<=","~"],
   commentStart = "{-",
   commentEnd = "-}",
@@ -128,6 +129,20 @@ midiPlayAction = do
   reservedOp "]"
   pure $ MidiPlay i {note : n, velocity : v, duration:d}
 
+chopParser :: P (Maybe Chop)
+chopParser = choice [
+    try $ do
+      reserved "chop"
+      reservedOp "."
+      reservedOp "["
+      divs <- variableTask
+      reservedOp ","
+      part <- variableTask
+      reservedOp "]"
+      pure $ Just (Chop divs part)
+  , pure Nothing
+  ]
+
 playAction :: P Action
 playAction = do
   -- _ <- pure unit. example of anywhere!
@@ -135,7 +150,8 @@ playAction = do
   reservedOp "."
   x <- identifier -- :: P String
   i <- sampleNumber
-  pure $ Play x i { gain : Constant 80.0, note :Constant  0.0, pan:Constant 50.0, cut: Constant 0.0}
+  chop <- chopParser
+  pure $ Play x i { gain : Constant 80.0, note :Constant  0.0, pan:Constant 50.0, cut: Constant 0.0, chop: chop}
 
 sampleNumber :: P NumExpression
 sampleNumber = choice [
@@ -162,7 +178,8 @@ playActionGain = do
   reservedOp "["
   g <- variableTask
   reservedOp "]"
-  pure $ Play x i { gain :g, note :Constant  0.0, pan:Constant 50.0 , cut: Constant 0.0}
+  chop <- chopParser
+  pure $ Play x i { gain :g, note :Constant  0.0, pan:Constant 50.0 , cut: Constant 0.0, chop: chop}
 
 
 playActionNote :: P Action
@@ -176,7 +193,8 @@ playActionNote = do
   reservedOp ","
   n <- variableTask
   reservedOp "]"
-  pure $ Play x i {gain :g, note :n, pan:Constant 50.0 , cut: Constant 0.0}
+  chop <- chopParser
+  pure $ Play x i {gain :g, note :n, pan:Constant 50.0 , cut: Constant 0.0, chop: chop}
 
 
 playActionPan :: P Action
@@ -192,7 +210,8 @@ playActionPan = do
   reservedOp ","
   p <- variableTask
   reservedOp "]"
-  pure $ Play x i {gain :g, note :n, pan:p, cut: Constant 0.0}
+  chop <- chopParser
+  pure $ Play x i {gain :g, note :n, pan:p, cut: Constant 0.0, chop: chop}
 
 
 playActionCut :: P Action
@@ -210,7 +229,8 @@ playActionCut = do
   reservedOp ","
   c <- variableTask
   reservedOp "]"
-  pure $ Play x i {gain :g, note :n, pan:p, cut:c}
+  chop <- chopParser
+  pure $ Play x i {gain :g, note :n, pan:p, cut:c, chop: chop}
 
 
 variableAction :: P Action

@@ -32,7 +32,7 @@ export const shiftLanguage = StreamLanguage.define({
       return "number";
     }
 
-    if (stream.match(/\b(play|if|else|for|every|while)\b/)) {
+    if (stream.match(/\b(play|if|else|for|every|while|chop)\b/)) {
       return "keyword";
     }
 

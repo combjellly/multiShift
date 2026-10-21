@@ -25,8 +25,10 @@ data Action = Play String NumExpression PlayParams
               | Sequence String (List NumExpression)
               | Conditional  NumExpression String NumExpression (List Action)
 
+data Chop = Chop NumExpression NumExpression
+
 -- Should Gain come before Note in parse? What may the priority be)
-type PlayParams = {gain :: NumExpression, note :: NumExpression, pan :: NumExpression, cut :: NumExpression}
+type PlayParams = {gain :: NumExpression, note :: NumExpression, pan :: NumExpression, cut :: NumExpression, chop :: Maybe Chop}
 type MidiParams = {note :: NumExpression, velocity :: NumExpression, duration :: NumExpression}
 
 
@@ -53,8 +55,13 @@ instance showElement :: Show Element where
 instance showLoop :: Show Loop where
     show (Loop n xs) = "(Every " <> show n <> " " <> show xs <> ")"
 
+instance showChop :: Show Chop where
+    show (Chop d p) = "chop.[" <> show d <> "," <> show p <> "]"
+
 instance showAction :: Show Action where
-    show (Play x n i) = "play.(" <> show x <> ") :"<> show n <> "[" <> show i <> "]"
+    show (Play x n i) = "play.(" <> show x <> ") :"<> show n <> "[" <> show i.gain <> "," <> show i.note <> "," <> show i.pan <> "," <> show i.cut <> "]" <> case i.chop of
+        Just c -> " " <> show c
+        Nothing -> ""
     show (MidiPlay x i) = "midi:"<> show x <> "[" <> show i <> "]"
     show (VariableAction x) = "(" <>show x<> ")"
     show (RandomN v x xs) = "rand." <> show x <> "," <> show xs 

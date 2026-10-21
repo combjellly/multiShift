@@ -56,7 +56,7 @@ launch = do
   tempo <- new $ launchDateTime 
   wStart <- new $ launchDateTime
   wEnd <- new $ launchDateTime
-  programRef <- new $ LoopElement (Loop (Constant 2.0) (Play "dogTest...woof?" (Constant 3.0) ({gain :Constant 50.0,note :Constant  0.0, pan : Constant 50.0, cut : Constant 0.0}):Nil)):Nil
+  programRef <- new $ LoopElement (Loop (Constant 2.0) (Play "dogTest...woof?" (Constant 3.0) ({gain :Constant 50.0,note :Constant  0.0, pan : Constant 50.0, cut : Constant 0.0, chop: Nothing}):Nil)):Nil
   variables <- new $ Map.singleton "default" 0.0
   originalVariables <- new $ Map.singleton "default" 0.0
   sequences <- new $ Map.singleton "default" Nil
@@ -198,13 +198,19 @@ dealWithLoops er p t wStart wEnd = do
         varMap <- liftEffect $ read er.variables 
         seqMap <- liftEffect $ read er.sequences 
 
-        let ls = collectLoops p -- ::  (List Loop)
-        let looptimes = concat $ map (getLoopTimes er wStart wEnd varMap seqMap) ls -- :: List (Tuple Loop Number)
-        let sortedList = sortBy (comparing snd) looptimes -- :: List (Tuple Number Loop)
+        let ls = indexLoops (collectLoops p) -- ::  List (Tuple Int Loop)
+        let looptimes = concat $ map (getLoopTimes er wStart wEnd varMap seqMap) ls -- :: List (Tuple (Tuple Int Loop) Number)
+        let sortedList = sortBy (comparing snd) looptimes -- :: List (Tuple (Tuple Int Loop) Number)
         events <- traverse (performLoop er) sortedList
         --log $ show looptimes
         pure $ concat events
       -- calculate effect of all activations 
+
+indexLoops :: List Loop -> List (Tuple Int Loop)
+indexLoops xs = go 0 xs
+  where
+    go _ Nil = Nil
+    go idx (y:ys) = Tuple idx y : go (idx + 1) ys
 
 -- traverse keeps things in m context!
 -- traverse_ :: unit
@@ -217,12 +223,12 @@ loopList (LoopElement x) = x:Nil
 loopList (VariableGlobal _ _) = Nil 
 loopList (GlobalSequence _ _) = Nil 
 
-getLoopTimes :: EngineRecord -> Number -> Number -> Map.Map String Number  -> Map.Map String (List Number)  -> Loop -> List (Tuple Loop Number) 
-getLoopTimes er wStart wEnd varMap seqMap (Loop n la)  = 
+getLoopTimes :: EngineRecord -> Number -> Number -> Map.Map String Number  -> Map.Map String (List Number)  -> Tuple Int Loop -> List (Tuple (Tuple Int Loop) Number) 
+getLoopTimes er wStart wEnd varMap seqMap (Tuple loopId (Loop n la))  = 
   -- calculate cycle time of occurences between wstart and wend. 
   -- for each number , produce a tuple 
 
-    let l = (Loop n la)
+    let l = Tuple loopId (Loop n la)
         newN = resolveExpression n varMap seqMap-- converts loops expression to number 
         safeN = limitLoopTime newN   
         xs = cycleIntervalList wStart wEnd safeN -- List Number
@@ -237,41 +243,40 @@ limitLoopTime n = do
 
 cycleIntervalList :: Number -> Number -> Number -> List Number
 cycleIntervalList wStart wEnd n = 
-  let pFirst = (toNumber $ ceil (wStart/n)) * n
-  --let pFirst =  (wStart/n) * n
-  in if pFirst < wEnd then
-    (pFirst : cycleIntervalList (pFirst+n) wEnd n )
-  else
-    Nil 
+  let eps = 0.0000001
+      kStart = toNumber $ ceil ((wStart - eps) / n)
+      kEnd = toNumber $ ceil ((wEnd - eps) / n)
+      go k acc = if k < kStart then acc else go (k - 1.0) ((k * n) : acc)
+  in go (kEnd - 1.0) Nil 
 
  --  for future me.... there shouldn't be two loops. This will lead to timing and sync issues. 
  --  it may be best for perform loop to return either Effect List SampleEvent or MidiEvent.
 
-performLoop :: EngineRecord -> Tuple Loop Number -> Effect (List SampleEvent)
-performLoop er (Tuple (Loop _ la) n) = performListAction er la n
+performLoop :: EngineRecord -> Tuple (Tuple Int Loop) Number -> Effect (List SampleEvent)
+performLoop er (Tuple (Tuple loopId (Loop _ la)) n) = performListAction er loopId la n
 
-performListAction :: EngineRecord -> List Action -> Number -> Effect (List SampleEvent)
-performListAction er la nowCycles = do 
-  xs <- traverse (performAction er nowCycles) la 
+performListAction :: EngineRecord -> Int -> List Action -> Number -> Effect (List SampleEvent)
+performListAction er loopId la nowCycles = do 
+  xs <- traverse (performAction er loopId nowCycles) la 
   pure $ concat xs 
 
  -- Either (List sampleEvent) List midiEvent
-performAction :: EngineRecord -> Number -> Action -> Effect (List SampleEvent)
-performAction er nowCycles (Play i x params) = do
+performAction :: EngineRecord -> Int -> Number -> Action -> Effect (List SampleEvent)
+performAction er loopId nowCycles (Play i x params) = do
   t <- read $ er.tempo
-  sampleEvent <- performPlay er t nowCycles i x params
+  sampleEvent <- performPlay er loopId t nowCycles i x params
   pure sampleEvent
 
 -- remember x for midiPlay is the channel#
-performAction er nowCycles (MidiPlay x params) = do
+performAction er loopId nowCycles (MidiPlay x params) = do
   t <- read $ er.tempo
   let i = "midimidmidi"
-  midiEvent <- performMidiPlay er t nowCycles i x params
+  midiEvent <- performMidiPlay er loopId t nowCycles i x params
   pure midiEvent
 
-performAction er nowCycles (VariableAction x) = performVariableA er x 
+performAction er loopId nowCycles (VariableAction x) = performVariableA er x 
 
-performAction er nowCycles (RandomN v x xs) = do
+performAction er loopId nowCycles (RandomN v x xs) = do
  varMap <- liftEffect $ read $ er.variables
  seqMap <- liftEffect $ read er.sequences 
 
@@ -283,7 +288,7 @@ performAction er nowCycles (RandomN v x xs) = do
  write newmap er.variables
  pure Nil
 
-performAction er nowCycles (RandomList v xs) = do
+performAction er loopId nowCycles (RandomList v xs) = do
   varMap <- liftEffect $ read $ er.variables
   seqMap <- liftEffect $ read er.sequences 
 
@@ -301,7 +306,7 @@ performAction er nowCycles (RandomList v xs) = do
 
   randLookUp
 
-performAction er nowCycles (Sequence v xs) = do 
+performAction er loopId nowCycles (Sequence v xs) = do 
   varMap <- liftEffect $ read $ er.variables
   sequenceMap <- liftEffect $ read $ er.sequences  
   let resolvedList = map (\n -> (resolveExpression n varMap sequenceMap)) xs
@@ -309,7 +314,7 @@ performAction er nowCycles (Sequence v xs) = do
   write newmap er.sequences
   pure Nil
 
-performAction er nowCycles (Conditional v comp xs ca) = do 
+performAction er loopId nowCycles (Conditional v comp xs ca) = do 
   varMap <- liftEffect $ read $ er.variables
   seqMap <- liftEffect $ read $ er.sequences  
   let rV =  resolveExpression v varMap seqMap -- first variable
@@ -326,7 +331,7 @@ performAction er nowCycles (Conditional v comp xs ca) = do
                     _ -> false
 
   if condBool == true then do
-    performListAction er ca nowCycles
+    performListAction er loopId ca nowCycles
     -- condition funcitons would go here. prolly case of..... < > == != <= >= ....
   else do 
     pure Nil
@@ -344,8 +349,8 @@ performVariableA er (VariableA s e) = do
 crunchVar :: Map.Map String Number -> Map.Map String (List Number) -> VariableA -> Map.Map String Number 
 crunchVar m mxs (VariableA s e) = Map.insert s (resolveExpression e m mxs) m -- v will be the outcome of e
 
-performPlay :: EngineRecord -> Tempo -> Number -> String -> NumExpression -> PlayParams -> Effect (List SampleEvent)
-performPlay er t nowCycles sample i params = do
+performPlay :: EngineRecord -> Int -> Tempo -> Number -> String -> NumExpression -> PlayParams -> Effect (List SampleEvent)
+performPlay er loopId t nowCycles sample i params = do
   varMap <- liftEffect $ read $ er.variables
   sequenceMap <- liftEffect $ read $ er.sequences  
 
@@ -358,11 +363,22 @@ performPlay er t nowCycles sample i params = do
   let g = resolveExpression params.gain varMap sequenceMap -- gain
   let p = resolveExpression params.pan varMap sequenceMap -- pitch
   let c = round (resolveExpression params.cut varMap sequenceMap) -- cut
-  let se = sampleNaming t sample nowCycles sampleNum n g p c channel v d-- put it all together
+  let Tuple begin end = case params.chop of
+        Nothing -> Tuple 0.0 1.0
+        Just (Chop divsExpr partExpr) ->
+          let divs = resolveExpression divsExpr varMap sequenceMap
+              part = resolveExpression partExpr varMap sequenceMap
+          in if divs > 0.0 then
+               let b = max 0.0 (min 1.0 (part / divs))
+                   e = max 0.0 (min 1.0 ((part + 1.0) / divs))
+               in Tuple b e
+             else
+               Tuple 0.0 1.0
+  let se = sampleNaming t sample nowCycles sampleNum n g p c channel v d begin end loopId-- put it all together
   pure $ pure se
 
-performMidiPlay :: EngineRecord -> Tempo -> Number -> String -> NumExpression -> MidiParams -> Effect (List SampleEvent)
-performMidiPlay er t nowCycles sample i params = do
+performMidiPlay :: EngineRecord -> Int -> Tempo -> Number -> String -> NumExpression -> MidiParams -> Effect (List SampleEvent)
+performMidiPlay er loopId t nowCycles sample i params = do
   varMap <- liftEffect $ read $ er.variables
   sequenceMap <- liftEffect $ read $ er.sequences 
 
@@ -374,7 +390,9 @@ performMidiPlay er t nowCycles sample i params = do
   let g = 0.0 -- gain
   let p = 0.0 -- pitch
   let c = 0 -- cut
-  let se = sampleNaming t sample nowCycles sampleNum n g p c channel v d-- put it all together
+  let begin = 0.0
+  let end = 1.0
+  let se = sampleNaming t sample nowCycles sampleNum n g p c channel v d begin end loopId-- put it all together
   pure $ pure se
 
 performMidi :: EngineRecord -> Tempo -> Number ->  NumExpression -> MidiParams -> Effect (List MidiEvent)
@@ -433,20 +451,20 @@ play wd synth es = for_ es \i -> do
   let gainFixed = gainFix (i.gain/100.0) -- webdirt requires that sounds range from 0-2. 1 is normal volume
   let panFixed = panFix (i.pan/100.0) -- 0 left 100 right
   if i.s == "synth" then do
-    SE.playSynth synth { whenPosix: i.whenPosix, note: i.note, gain: gainFixed, duration: 0.5, type: "sine" }
+    SE.playSynth synth { whenPosix: i.whenPosix, note: i.note, gain: gainFixed, duration: 0.5, type: "sine", loopId: i.loopId }
     pure unit
   else do
     if i.note >= 50.0 then do
       let rNote = 50.0
-      playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:rNote, pan:panFixed, cut:i.cut }
+      playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:rNote, pan:panFixed, cut:i.cut, begin: i.begin, end: i.end, loopId: i.loopId }
       pure unit
       else do 
       if i.note <= -50.0 then do
         let rNote = -50.0
-        playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:rNote, pan:panFixed , cut:i.cut}
+        playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:rNote, pan:panFixed , cut:i.cut, begin: i.begin, end: i.end, loopId: i.loopId }
         pure unit
       else do 
-        playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:i.note, pan:panFixed , cut:i.cut}
+        playSample wd {s: i.s, n: i.n, whenPosix: i.whenPosix, gain: gainFixed, note:i.note, pan:panFixed , cut:i.cut, begin: i.begin, end: i.end, loopId: i.loopId }
         pure unit
 
 --adjusted gain to go to 200!
