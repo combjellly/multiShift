@@ -242,6 +242,7 @@ export function Editor({
   const editorRef = useRef(null);
   const viewRef = useRef(null);
   const ydocRef = useRef(null);
+  const isInitialSyncDone = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Controller Mode state
@@ -372,12 +373,24 @@ export function Editor({
         ]
       });
 
+      const loadedCode = ytext.toString();
+      if (loadedCode.length > 0) {
+        onChange(loadedCode);
+      } else if (code && code.length > 0) {
+        ydoc.transact(() => {
+          ytext.insert(0, code);
+        });
+      }
+
       view = new EditorView({
         state,
         parent: editorRef.current
       });
       viewRef.current = view;
       setIsLoading(false);
+      setTimeout(() => {
+        isInitialSyncDone.current = true;
+      }, 100);
     });
 
     return () => {
@@ -390,6 +403,7 @@ export function Editor({
 
   // Sync external code changes (like presets) into Yjs
   useEffect(() => {
+    if (!isInitialSyncDone.current) return;
     if (ydocRef.current && viewRef.current) {
       const currentDoc = viewRef.current.state.doc.toString();
       if (code !== currentDoc) {
