@@ -257,6 +257,11 @@ export function Editor({
     ? tokens[Math.min(selectedTokenIdx, tokens.length - 1)] 
     : null;
 
+  const onEvaluateRef = useRef(onEvaluate);
+  useEffect(() => {
+    onEvaluateRef.current = onEvaluate;
+  }, [onEvaluate]);
+
   // Initialize CodeMirror and Yjs only once
   useEffect(() => {
     if (!editorRef.current) return;
@@ -277,21 +282,27 @@ export function Editor({
         {
           key: "Shift-Space",
           run: (v) => {
-            onEvaluate(v.state.doc.toString());
+            if (onEvaluateRef.current) {
+              onEvaluateRef.current(v.state.doc.toString());
+            }
             return true;
           }
         },
         {
           key: "Mod-Enter",
           run: (v) => {
-            onEvaluate(v.state.doc.toString());
+            if (onEvaluateRef.current) {
+              onEvaluateRef.current(v.state.doc.toString());
+            }
             return true;
           }
         },
         {
           key: "Shift-Enter",
           run: (v) => {
-            onEvaluate(v.state.doc.toString());
+            if (onEvaluateRef.current) {
+              onEvaluateRef.current(v.state.doc.toString());
+            }
             return true;
           }
         }

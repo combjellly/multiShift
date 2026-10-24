@@ -94,16 +94,16 @@ renderStandalone er wd seEngine = do
   prevW <- read $ er.wEnd 
   let futureTime = fromMaybe t $ adjust (Milliseconds 400.00) t -- :: Milliseconds
   if prevW <= futureTime then do
-    let wS = prevW
-    let wE = fromMaybe t $ adjust (Milliseconds 500.0) wS 
+    let wS = if prevW < t then t else prevW
+    let wE = fromMaybe wS $ adjust (Milliseconds 500.0) wS 
     write wS er.wStart
     write wE er.wEnd
-    t <- read $ er.tempo
-    let cycleStart = timeToCount t wS
-    let cycleEnd = timeToCount t wE
+    tempoLaunch <- read $ er.tempo
+    let cycleStart = timeToCount tempoLaunch wS
+    let cycleEnd = timeToCount tempoLaunch wE
     p <- liftEffect $ read $ er.programRef
     variables <- liftEffect $ read $ er.variables
-    se <- whatDoINeedToDoThisRenderFrame er p t cycleStart cycleEnd -- read and write variable refs + renderEvents 
+    se <- whatDoINeedToDoThisRenderFrame er p tempoLaunch cycleStart cycleEnd -- read and write variable refs + renderEvents 
     play wd seEngine se
     pure $ show se
   else

@@ -16,6 +16,7 @@ export function useEngine() {
 
   // Expose these refs for MIDI processing if necessary, or keep them local
   const engineRef = useRef(null);
+  const hasLaunchedRef = useRef(false);
   const eventListeners = useRef(new Set());
 
   const subscribeToEvents = (fn) => {
@@ -30,16 +31,17 @@ export function useEngine() {
   };
 
   const launchNow = (sampleMap = "https://raw.githubusercontent.com/combjellly/shift/main/samples") => {
-    if (engineState.hasLaunched) return;
-    
-    // Unlock Audio Context on first gesture
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (AudioContext) {
-      const audioCtx = new AudioContext();
-      if (audioCtx.state === "suspended") {
-        audioCtx.resume();
+    if (hasLaunchedRef.current || engineRef.current) {
+      // Resume existing audio context if suspended
+      if (engineRef.current?.wd?.ac && engineRef.current.wd.ac.state === "suspended") {
+        engineRef.current.wd.ac.resume();
       }
+      if (engineRef.current?.se?.audioContext && engineRef.current.se.audioContext.state === "suspended") {
+        engineRef.current.se.audioContext.resume();
+      }
+      return;
     }
+    hasLaunchedRef.current = true;
 
     const er = launch();
     const wd = launchDirt(sampleMap)();
@@ -95,19 +97,20 @@ export function useEngine() {
     
     engineRef.current = { er, wd, se };
     
-    // Start render loop
-    const renderLoop = () => {
-      if (engineRef.current) {
-        const { er, wd, se } = engineRef.current;
-        const disp = renderStandalone(er)(wd)(se)();
-        if (disp && disp !== 'sleepy time' && disp !== 'Nil') {
-          playMidiEvents(disp);
+    // Start render loop once
+    if (!loopRef.current) {
+      const renderLoop = () => {
+        if (engineRef.current) {
+          const { er, wd, se } = engineRef.current;
+          const disp = renderStandalone(er)(wd)(se)();
+          if (disp && disp !== 'sleepy time' && disp !== 'Nil') {
+            playMidiEvents(disp);
+          }
         }
-      }
-      loopRef.current = setTimeout(renderLoop, 16);
-    };
-    
-    renderLoop();
+        loopRef.current = setTimeout(renderLoop, 16);
+      };
+      renderLoop();
+    }
   };
 
   const evaluateCode = (code) => {
