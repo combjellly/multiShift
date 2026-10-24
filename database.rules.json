@@ -1,6 +1,13 @@
 {
   "rules": {
-    ".read": true,
-    ".write": true
+    ".read": false,
+    ".write": false,
+    "shift_collaboration": {
+      ".read": true,
+      "$update_id": {
+        ".write": "!data.exists() && newData.exists()",
+        ".validate": "newData.isString() && newData.val().length < 100000"
+      }
+    }
   }
 }
