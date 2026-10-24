@@ -341,9 +341,52 @@ body {
   color: var(--text-main);
   padding: 0.5rem;
   border-radius: 6px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
   font-family: 'JetBrains Mono', monospace;
   outline: none;
+}
+
+.midi-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.midi-btn {
+  flex: 1;
+  font-size: 0.78rem;
+  padding: 0.5rem 0.4rem;
+  text-align: center;
+  border-radius: 6px;
+  background: var(--glass-border);
+  color: var(--text-main);
+  border: 1px solid var(--glass-border);
+}
+
+.midi-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.midi-btn.test-btn {
+  background: var(--accent);
+  color: #11111b;
+  border: none;
+}
+
+.midi-btn.test-btn:hover {
+  opacity: 0.9;
+}
+
+.midi-status {
+  font-size: 0.76rem;
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  background: rgba(203, 166, 247, 0.12);
+  color: var(--accent);
+  word-break: break-word;
+  line-height: 1.35;
 }
 
 .color-picker {

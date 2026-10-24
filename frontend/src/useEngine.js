@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { launch, launchDirt, launchSynthEngine, renderStandalone, parse } from './shift.js';
+import { playMidiEvents } from './midi.js';
 
 export function useEngine() {
   const [engineState, setEngineState] = useState({
@@ -99,10 +100,9 @@ export function useEngine() {
       if (engineRef.current) {
         const { er, wd, se } = engineRef.current;
         const disp = renderStandalone(er)(wd)(se)();
-        // MIDI handling can be hooked in here if needed:
-        // if (typeof navigator.requestMIDIAccess === "function") {
-        //   playMidiEvents(disp);
-        // }
+        if (disp && disp !== 'sleepy time' && disp !== 'Nil') {
+          playMidiEvents(disp);
+        }
       }
       loopRef.current = setTimeout(renderLoop, 16);
     };

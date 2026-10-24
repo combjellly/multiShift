@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import logoImg from './assets/logo.png';
+import { 
+  populateMidiOutputDropdown, 
+  selectOutputById, 
+  testMidiOutput, 
+  setMidiSync, 
+  getMidiSync, 
+  setOutputsChangedCallback 
+} from './midi';
 
 export function Sidebar({ 
   isOpen, 
@@ -14,8 +22,76 @@ export function Sidebar({
   isControllerMode,
   onToggleControllerMode
 }) {
-  const [syncDelay, setSyncDelay] = useState(375);
+  const [syncDelay, setSyncDelay] = useState(() => getMidiSync());
   const [themeColor, setThemeColor] = useState(() => localStorage.getItem("theme") || "#434153");
+  const [midiOutputs, setMidiOutputs] = useState([]);
+  const [selectedMidiId, setSelectedMidiId] = useState('');
+  const [midiStatus, setMidiStatus] = useState('');
+  const [isPopulating, setIsPopulating] = useState(false);
+
+  useEffect(() => {
+    setOutputsChangedCallback((outputs, activeId) => {
+      setMidiOutputs(outputs);
+      if (activeId) setSelectedMidiId(activeId);
+    });
+
+    // Check if MIDI permission was already granted previously
+    if (typeof navigator !== 'undefined' && navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'midi', sysex: false }).then((perm) => {
+        if (perm.state === 'granted') {
+          populateMidiOutputDropdown().then((res) => {
+            if (res.success) {
+              setMidiOutputs(res.outputs);
+              if (res.selectedId) setSelectedMidiId(res.selectedId);
+            }
+          });
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  const handlePopulateMidi = async () => {
+    setIsPopulating(true);
+    setMidiStatus('Scanning for MIDI devices...');
+    const res = await populateMidiOutputDropdown();
+    setIsPopulating(false);
+    if (res.success) {
+      setMidiOutputs(res.outputs);
+      if (res.selectedId) {
+        setSelectedMidiId(res.selectedId);
+      }
+      if (res.outputs.length === 0) {
+        setMidiStatus('No MIDI devices found. Please connect your hardware or virtual MIDI port.');
+      } else {
+        setMidiStatus(`Found ${res.outputs.length} MIDI output${res.outputs.length > 1 ? 's' : ''}`);
+      }
+    } else {
+      setMidiStatus(res.error || 'Failed to access MIDI');
+    }
+  };
+
+  const handleSelectMidi = (e) => {
+    const id = e.target.value;
+    setSelectedMidiId(id);
+    const chosen = selectOutputById(id);
+    if (chosen) {
+      setMidiStatus(`Selected: ${chosen.name}`);
+    }
+  };
+
+  const handleTestMidi = () => {
+    const res = testMidiOutput();
+    if (res.success) {
+      setMidiStatus(res.message);
+    } else {
+      setMidiStatus(res.error);
+    }
+  };
+
+  const handleApplySync = () => {
+    const applied = setMidiSync(syncDelay);
+    setMidiStatus(`MIDI sync delay set to ${applied} ms`);
+  };
 
   const handleColorChange = (e) => {
     const newColor = e.target.value;
@@ -108,23 +184,61 @@ export function Sidebar({
               </div>
             </div>
 
-            <h3 style={{ marginTop: '1.5rem' }}>MIDI Sync</h3>
-            <div className="input-group">
-              <input 
-                type="number" 
-                value={syncDelay} 
-                onChange={e => setSyncDelay(Number(e.target.value))} 
-                placeholder="MIDI delay (ms)" 
-              />
-              <button className="btn">Sync</button>
-            </div>
-            
-            <h3>MIDI Output</h3>
-            <select id="midiOutputDropdown" className="dropdown">
-              <option>Browser Default</option>
+            <h3 style={{ marginTop: '1.5rem' }}>MIDI Output</h3>
+            <select 
+              id="midiOutputDropdown" 
+              className="dropdown"
+              value={selectedMidiId}
+              onChange={handleSelectMidi}
+            >
+              {midiOutputs.length === 0 ? (
+                <option value="">No MIDI Outputs (Click Populate)</option>
+              ) : (
+                midiOutputs.map((out) => (
+                  <option key={out.id} value={out.id}>
+                    {out.name}
+                  </option>
+                ))
+              )}
             </select>
 
-            <h3>Theme</h3>
+            <div className="midi-actions">
+              <button 
+                type="button"
+                className="btn midi-btn" 
+                onClick={handlePopulateMidi}
+                disabled={isPopulating}
+              >
+                {isPopulating ? 'Scanning...' : 'Populate MIDI Output'}
+              </button>
+              <button 
+                type="button"
+                className="btn midi-btn test-btn" 
+                onClick={handleTestMidi}
+              >
+                Test MIDI Output
+              </button>
+            </div>
+
+            {midiStatus && (
+              <div className="midi-status">
+                {midiStatus}
+              </div>
+            )}
+
+            <h3 style={{ marginTop: '1.2rem' }}>MIDI Sync</h3>
+            <div className="input-group">
+              <input 
+                id="syncInput"
+                type="number" 
+                value={syncDelay} 
+                onChange={e => setSyncDelay(e.target.value)} 
+                placeholder="MIDI delay (ms)" 
+              />
+              <button type="button" className="btn" onClick={handleApplySync}>Sync</button>
+            </div>
+
+            <h3 style={{ marginTop: '1.5rem' }}>Theme</h3>
             <input 
               type="color" 
               value={themeColor} 
