@@ -24,20 +24,45 @@ export const DEFAULT_SAMPLES = [
   "vibraphone", "vl1", "waffles", "windows"
 ];
 
-// Active sample list (can be augmented dynamically from sampleMap.json)
+// Active sample list (can be augmented dynamically from sampleMap.json and custom session samples)
+let baseSampleList = [...DEFAULT_SAMPLES];
+let customSampleNames = [];
+
 export let sampleList = [...DEFAULT_SAMPLES];
+
+function rebuildSampleList() {
+  const set = new Set([...baseSampleList, ...customSampleNames]);
+  sampleList = Array.from(set).sort();
+}
+
+export function registerCustomSampleName(name) {
+  if (!customSampleNames.includes(name)) {
+    customSampleNames.push(name);
+    rebuildSampleList();
+  }
+}
+
+export function removeCustomSampleName(name) {
+  customSampleNames = customSampleNames.filter(n => n !== name);
+  rebuildSampleList();
+}
+
+export function getCustomSampleNames() {
+  return [...customSampleNames];
+}
 
 // Load sample map dynamically on startup
 const SAMPLE_MAP_URL = "https://raw.githubusercontent.com/combjellly/shift/main/samples/sampleMap.json";
 
 export async function initSampleMap() {
   try {
-    const res = await fetch(SAMPLE_MAP_URL);
+    const res = await fetch(`${SAMPLE_MAP_URL}?t=${Date.now()}`);
     if (res.ok) {
       const data = await res.json();
       const keys = Object.keys(data).sort();
       if (keys.length > 0) {
-        sampleList = keys;
+        baseSampleList = keys;
+        rebuildSampleList();
       }
     }
   } catch (err) {
@@ -58,8 +83,9 @@ export function sampleCompletionSource(context) {
     options: sampleList.map((name) => ({
       label: name,
       type: "variable",
-      detail: "sample"
+      detail: customSampleNames.includes(name) ? "custom sample" : "sample"
     })),
     validFor: /^[\w-]*$/
   };
 }
+

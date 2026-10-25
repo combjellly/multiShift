@@ -8,7 +8,19 @@ import { presets } from './presets';
 import './index.css';
 
 function App() {
-  const { evaluateCode, stop, isPlaying, status, subscribeToEvents } = useEngine();
+  const { 
+    evaluateCode, 
+    stop, 
+    isPlaying, 
+    status, 
+    subscribeToEvents,
+    loadCustomSample,
+    reloadSampleMap,
+    removeCustomSample,
+    previewCustomSample,
+    stopPreview,
+    audioContext
+  } = useEngine();
   const [code, setCode] = useState(presets.script0);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [presetIndex, setPresetIndex] = useState(0);
@@ -157,6 +169,20 @@ function App() {
         onVizSpeedChange={setVizSpeed}
         isControllerMode={isControllerMode}
         onToggleControllerMode={() => setIsControllerMode(prev => !prev)}
+        onLoadCustomSample={loadCustomSample}
+        onReloadSampleMap={reloadSampleMap}
+        onRemoveCustomSample={removeCustomSample}
+        onPreviewSample={previewCustomSample}
+        onStopPreview={stopPreview}
+        audioContext={audioContext}
+        onInsertSnippet={(snippet) => {
+          setCode(prev => {
+            const trimmed = prev.trimEnd();
+            const updated = trimmed ? `${trimmed}\n\n${snippet}` : snippet;
+            localStorage.setItem("program", updated);
+            return updated;
+          });
+        }}
       />
     </div>
   );

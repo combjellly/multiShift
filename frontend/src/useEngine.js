@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { launch, launchDirt, launchSynthEngine, renderStandalone, parse } from './shift.js';
 import { playMidiEvents } from './midi.js';
+import { 
+  setActiveWebDirt, 
+  loadCustomSampleFile, 
+  removeCustomSample, 
+  reloadSampleMap, 
+  previewCustomSample, 
+  stopPreview,
+  getCustomSamples,
+  subscribeCustomSamples
+} from './sampleManager.js';
 
 export function useEngine() {
   const [engineState, setEngineState] = useState({
@@ -46,6 +56,9 @@ export function useEngine() {
     const er = launch();
     const wd = launchDirt(sampleMap)();
     const se = launchSynthEngine();
+
+    // Connect WebDirt to session sample manager
+    setActiveWebDirt(wd);
 
     // Hook WebDirt sample playback
     if (wd && typeof wd.playSample === 'function') {
@@ -132,6 +145,21 @@ export function useEngine() {
     setEngineState(prev => ({ ...prev, isPlaying: false }));
   };
 
+  const loadCustomSample = async (file, name) => {
+    launchNow();
+    const currentWd = engineRef.current?.wd;
+    const currentAc = currentWd?.ac || engineRef.current?.se?.audioContext;
+    return await loadCustomSampleFile(file, name, currentAc, currentWd);
+  };
+
+  const handleReloadSampleMap = async () => {
+    return await reloadSampleMap(engineRef.current?.wd);
+  };
+
+  const handleRemoveCustomSample = (name) => {
+    removeCustomSample(name, engineRef.current?.wd);
+  };
+
   useEffect(() => {
     return () => {
       if (loopRef.current) clearTimeout(loopRef.current);
@@ -146,6 +174,14 @@ export function useEngine() {
     isPlaying: engineState.isPlaying,
     hasLaunched: engineState.hasLaunched,
     subscribeToEvents,
+    loadCustomSample,
+    reloadSampleMap: handleReloadSampleMap,
+    removeCustomSample: handleRemoveCustomSample,
+    previewCustomSample,
+    stopPreview,
+    getCustomSamples,
+    subscribeCustomSamples,
     audioContext: engineState.webDirt?.ac || engineState.synthEngine?.audioContext
   };
 }
+
