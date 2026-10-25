@@ -8,6 +8,13 @@
         ".write": "!data.exists() && newData.exists()",
         ".validate": "newData.isString() && newData.val().length < 100000"
       }
+    },
+    "shift_dev": {
+      ".read": true,
+      "$update_id": {
+        ".write": "!data.exists() && newData.exists()",
+        ".validate": "newData.isString() && newData.val().length < 100000"
+      }
     }
   }
 }

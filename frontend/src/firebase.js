@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCtmYOcwOGLJiPx6vf8Un2POVGNcqqfKC0",
@@ -14,20 +13,4 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-
-// Initialize Firebase App Check with reCAPTCHA Enterprise (Fraud Defense)
-if (typeof window !== "undefined") {
-  try {
-    if (import.meta.env.DEV) {
-      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-    }
-    initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider("6LeeeP8tAAAAADDP9fmkZqhU1xblSiAqcdqeeuzf"),
-      isTokenAutoRefreshEnabled: true
-    });
-  } catch (err) {
-    console.warn("Firebase App Check initialization warning:", err);
-  }
-}
-
 export const database = getDatabase(app);

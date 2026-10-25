@@ -268,9 +268,13 @@ export function Editor({
 
     const ydoc = new Y.Doc();
     ydocRef.current = ydoc;
-    const ytext = ydoc.getText('codemirror');
+    // Only the official production domain connects to shift_collaboration
+    // Localhost, forks, and development environments connect to shift_dev
+    const isProduction = typeof window !== 'undefined' && 
+      window.location.hostname === 'combjellly.github.io';
+    const collaborationChannel = isProduction ? 'shift_collaboration' : 'shift_dev';
 
-    const provider = new FirebaseProvider(database, 'shift_collaboration', ydoc);
+    const provider = new FirebaseProvider(database, collaborationChannel, ydoc);
 
     let view = null;
     let cancelled = false;
