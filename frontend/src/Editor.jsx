@@ -268,6 +268,8 @@ export function Editor({
 
     const ydoc = new Y.Doc();
     ydocRef.current = ydoc;
+    const ytext = ydoc.getText('codemirror');
+
     // Only the official production domain connects to shift_collaboration
     // Localhost, forks, and development environments connect to shift_dev
     const isProduction = typeof window !== 'undefined' && 
