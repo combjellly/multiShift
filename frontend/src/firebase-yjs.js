@@ -23,11 +23,12 @@ function base64ToUint8Array(base64) {
 }
 
 export class FirebaseProvider {
-  constructor(database, path, ydoc) {
+  constructor(database, path, ydoc, readOnly = false) {
     this.ydoc = ydoc;
     this.updatesRef = ref(database, path);
     this._seenKeys = new Set();
     this._destroyed = false;
+    this.readOnly = readOnly;
 
     // Expose a promise that resolves once all existing DB entries are applied.
     // The editor waits on this before rendering so users always see the last state.
@@ -36,9 +37,9 @@ export class FirebaseProvider {
       this._subscribeToNew();
     });
 
-    // Send local changes to Firebase (skip updates that arrived from Firebase)
+    // Send local changes to Firebase (skip if readOnly or update arrived from Firebase)
     ydoc.on('update', (update, origin) => {
-      if (origin !== this && !this._destroyed) {
+      if (origin !== this && !this._destroyed && !this.readOnly) {
         const base64Update = uint8ArrayToBase64(update);
         push(this.updatesRef, base64Update).catch(err => {
           console.error('Firebase push failed:', err);

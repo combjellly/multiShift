@@ -40,6 +40,11 @@ export function Sidebar({
   const [midiStatus, setMidiStatus] = useState('');
   const [isPopulating, setIsPopulating] = useState(false);
 
+  // Dropdown section accordion open states (default closed)
+  const [isVizOpen, setIsVizOpen] = useState(false);
+  const [isSampleOpen, setIsSampleOpen] = useState(false);
+  const [isMidiOpen, setIsMidiOpen] = useState(false);
+
   // Sample loading states
   const [customSamples, setCustomSamples] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -52,7 +57,6 @@ export function Sidebar({
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    // Subscribe to custom samples list updates
     const unsub = subscribeCustomSamples((list) => {
       setCustomSamples(list);
     });
@@ -65,7 +69,6 @@ export function Sidebar({
       if (activeId) setSelectedMidiId(activeId);
     });
 
-    // Check if MIDI permission was already granted previously
     if (typeof navigator !== 'undefined' && navigator.permissions && navigator.permissions.query) {
       navigator.permissions.query({ name: 'midi', sysex: false }).then((perm) => {
         if (perm.state === 'granted') {
@@ -199,7 +202,7 @@ export function Sidebar({
         setSelectedMidiId(res.selectedId);
       }
       if (res.outputs.length === 0) {
-        setMidiStatus('No MIDI devices found. Please connect your hardware or virtual MIDI port.');
+        setMidiStatus('No MIDI devices found.');
       } else {
         setMidiStatus(`Found ${res.outputs.length} MIDI output${res.outputs.length > 1 ? 's' : ''}`);
       }
@@ -252,272 +255,308 @@ export function Sidebar({
           </div>
 
           <div className="settings-section">
-            <h3>Visualizer</h3>
-            <div className="setting-item">
-              <div className="viz-toggle-pills">
-                <button 
-                  className={`viz-pill-btn ${vizMode === 'circle' ? 'active' : ''}`}
-                  onClick={() => onVizModeChange('circle')}
-                >
-                  Orbit Circle
-                </button>
-                <button 
-                  className={`viz-pill-btn ${vizMode === 'grid' ? 'active' : ''}`}
-                  onClick={() => onVizModeChange('grid')}
-                >
-                  Moving Grid
-                </button>
-              </div>
-            </div>
-
-            <div className="setting-item" style={{ marginTop: '0.85rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.35rem', opacity: 0.8 }}>
-                Opacity ({Math.round(vizOpacity * 100)}%)
-              </label>
-              <div className="viz-toggle-pills">
-                {[0.25, 0.5, 0.75, 1.0].map((val) => (
-                  <button
-                    key={val}
-                    className={`viz-pill-btn mini ${Math.abs(vizOpacity - val) < 0.05 ? 'active' : ''}`}
-                    onClick={() => onVizOpacityChange(val)}
-                  >
-                    {Math.round(val * 100)}%
-                  </button>
-                ))}
-                <button
-                  className={`viz-pill-btn mini ${vizOpacity === 0 ? 'active' : ''}`}
-                  onClick={() => onVizOpacityChange(0)}
-                >
-                  Off
-                </button>
-              </div>
-            </div>
-
-            {vizMode === 'grid' && (
-              <div className="setting-item" style={{ marginTop: '0.85rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.35rem', opacity: 0.8 }}>
-                  Scroll Speed
-                </label>
-                <input 
-                  type="range"
-                  min="200"
-                  max="600"
-                  step="20"
-                  value={vizSpeed}
-                  onChange={(e) => onVizSpeedChange(parseInt(e.target.value))}
-                  className="viz-slider"
-                />
-              </div>
-            )}
-
-            <h3 style={{ marginTop: '1.5rem' }}>Controller Mode</h3>
-            <div className="setting-item">
-              <div className="viz-toggle-pills">
-                <button 
-                  className={`viz-pill-btn ${isControllerMode ? 'active' : ''}`}
-                  onClick={() => onToggleControllerMode && onToggleControllerMode()}
-                >
-                  {isControllerMode ? '🎮 Active' : '🎮 Disabled'}
-                </button>
-              </div>
-            </div>
-
-            <h3 style={{ marginTop: '1.5rem' }}>Sample Library</h3>
-            <div className="sample-card">
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                accept=".wav,audio/wav,audio/*" 
-                onChange={handleFileInputChange} 
-                style={{ display: 'none' }} 
-              />
-
-              <div 
-                className={`sample-dropzone ${isDragging ? 'dragging' : ''} ${selectedFile ? 'has-file' : ''}`}
-                onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                title="Click or drop a WAV file here"
+            {/* Controller Mode - Clean square toggle without emoji */}
+            <div className="setting-item" style={{ marginBottom: '1.25rem' }}>
+              <span className="setting-label">CONTROLLER MODE</span>
+              <button 
+                type="button"
+                className={`viz-pill-btn full-width ${isControllerMode ? 'active' : ''}`}
+                onClick={() => onToggleControllerMode && onToggleControllerMode()}
               >
-                {selectedFile ? (
-                  <div className="sample-file-info">
-                    <span className="file-icon">🎵</span>
-                    <span className="file-name" title={selectedFile.name}>{selectedFile.name}</span>
-                    <span className="file-size">({(selectedFile.size / 1024).toFixed(0)} KB)</span>
+                {isControllerMode ? 'ACTIVE' : 'DISABLED'}
+              </button>
+            </div>
+
+            {/* Visualizer Dropdown Section */}
+            <button 
+              type="button" 
+              className={`gothic-section-header ${isVizOpen ? 'open' : ''}`}
+              onClick={() => setIsVizOpen(prev => !prev)}
+            >
+              <span>VISUALIZER</span>
+              <span className="header-arrow">{isVizOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {isVizOpen && (
+              <div className="section-body">
+                <div className="setting-item">
+                  <label className="setting-label">Mode</label>
+                  <select 
+                    className="dropdown"
+                    value={vizMode}
+                    onChange={(e) => onVizModeChange(e.target.value)}
+                  >
+                    <option value="circle">Orbit Circle</option>
+                    <option value="grid">Moving Grid</option>
+                  </select>
+                </div>
+
+                <div className="setting-item">
+                  <label className="setting-label">
+                    Opacity ({Math.round(vizOpacity * 100)}%)
+                  </label>
+                  <div className="viz-toggle-pills">
+                    {[0.25, 0.5, 0.75, 1.0].map((val) => (
+                      <button
+                        key={val}
+                        className={`viz-pill-btn mini ${Math.abs(vizOpacity - val) < 0.05 ? 'active' : ''}`}
+                        onClick={() => onVizOpacityChange(val)}
+                      >
+                        {Math.round(val * 100)}%
+                      </button>
+                    ))}
+                    <button
+                      className={`viz-pill-btn mini ${vizOpacity === 0 ? 'active' : ''}`}
+                      onClick={() => onVizOpacityChange(0)}
+                    >
+                      Off
+                    </button>
                   </div>
-                ) : (
-                  <div className="sample-prompt">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '4px', display: 'block', margin: '0 auto 4px auto' }}>
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-                    </svg>
-                    <span>Click or Drag & Drop WAV here</span>
+                </div>
+
+                {vizMode === 'grid' && (
+                  <div className="setting-item">
+                    <label className="setting-label">Scroll Speed</label>
+                    <input 
+                      type="range"
+                      min="200"
+                      max="600"
+                      step="20"
+                      value={vizSpeed}
+                      onChange={(e) => onVizSpeedChange(parseInt(e.target.value))}
+                      className="viz-slider"
+                    />
                   </div>
                 )}
               </div>
+            )}
 
-              {selectedFile && (
-                <div className="sample-name-input-group">
-                  <label className="sample-name-label">
-                    Sample identifier: <code>play.{sampleCustomName || 'name'}</code>
-                  </label>
-                  <div className="input-with-prefix">
-                    <span className="prefix">play.</span>
+            {/* Sample Library Dropdown Section */}
+            <button 
+              type="button" 
+              className={`gothic-section-header ${isSampleOpen ? 'open' : ''}`}
+              onClick={() => setIsSampleOpen(prev => !prev)}
+            >
+              <span>SAMPLE LIBRARY {customSamples.length > 0 ? `(${customSamples.length})` : ''}</span>
+              <span className="header-arrow">{isSampleOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {isSampleOpen && (
+              <div className="section-body">
+                <div className="sample-card">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    accept=".wav,audio/wav,audio/*" 
+                    onChange={handleFileInputChange} 
+                    style={{ display: 'none' }} 
+                  />
+
+                  <div 
+                    className={`sample-dropzone ${isDragging ? 'dragging' : ''} ${selectedFile ? 'has-file' : ''}`}
+                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    title="Click or drop a WAV file here"
+                  >
+                    {selectedFile ? (
+                      <div className="sample-file-info">
+                        <span className="file-name" title={selectedFile.name}>{selectedFile.name}</span>
+                        <span className="file-size">({(selectedFile.size / 1024).toFixed(0)} KB)</span>
+                      </div>
+                    ) : (
+                      <div className="sample-prompt">
+                        <span>Click or Drop WAV File Here</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedFile && (
+                    <div className="sample-name-input-group">
+                      <label className="sample-name-label">
+                        Identifier: <code>play.{sampleCustomName || 'name'}</code>
+                      </label>
+                      <div className="input-with-prefix">
+                        <span className="prefix">play.</span>
+                        <input 
+                          type="text" 
+                          className="sample-name-field"
+                          value={sampleCustomName}
+                          onChange={(e) => setSampleCustomName(sanitizeSampleName(e.target.value))}
+                          placeholder="e.g. mykick"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="sample-actions">
+                    <button 
+                      type="button" 
+                      className="btn sample-btn load-btn"
+                      onClick={handleLoadSample}
+                      disabled={!selectedFile || isLoadingSample}
+                    >
+                      {isLoadingSample ? 'Loading...' : 'Load Sample'}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn sample-btn reload-btn"
+                      onClick={handleReloadMap}
+                      disabled={isReloadingMap}
+                      title="Reload default sampleMap.json and re-sync session library"
+                    >
+                      {isReloadingMap ? 'Reloading...' : 'Reload Map'}
+                    </button>
+                  </div>
+
+                  {sampleStatus && (
+                    <div className={`sample-status-box ${sampleStatus.type}`}>
+                      {sampleStatus.message}
+                    </div>
+                  )}
+                </div>
+
+                {/* Session Loaded Samples List */}
+                {customSamples.length > 0 && (
+                  <div className="custom-samples-container">
+                    <div className="custom-samples-header">
+                      <span>Loaded Samples ({customSamples.length})</span>
+                    </div>
+                    <div className="custom-samples-list">
+                      {customSamples.map((s) => {
+                        const firstVar = s.variations && s.variations[0];
+                        const isPlayingThis = playingPreviewName === s.name;
+                        return (
+                          <div key={s.name} className="custom-sample-row">
+                            <div className="sample-row-main">
+                              <span className="sample-code-tag">play.{s.name}</span>
+                              {firstVar && (
+                                <span className="sample-specs">
+                                  {firstVar.duration.toFixed(1)}s • {firstVar.numberOfChannels === 2 ? 'Stereo' : 'Mono'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="sample-row-actions">
+                              <button 
+                                type="button" 
+                                className={`sample-pill-btn ${isPlayingThis ? 'playing' : ''}`}
+                                onClick={() => handleTogglePreview(s)}
+                                title={isPlayingThis ? 'Stop Preview' : 'Preview Sample'}
+                              >
+                                {isPlayingThis ? '■' : '▶'}
+                              </button>
+                              {onInsertSnippet && (
+                                <button 
+                                  type="button" 
+                                  className="sample-pill-btn insert"
+                                  onClick={() => onInsertSnippet(`every 1\n  play.${s.name}[80, 0]`)}
+                                  title={`Insert play.${s.name} snippet into code`}
+                                >
+                                  +Code
+                                </button>
+                              )}
+                              <button 
+                                type="button" 
+                                className="sample-pill-btn delete"
+                                onClick={() => handleRemove(s.name)}
+                                title="Remove sample from session"
+                              >
+                                &times;
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MIDI Settings Dropdown Section */}
+            <button 
+              type="button" 
+              className={`gothic-section-header ${isMidiOpen ? 'open' : ''}`}
+              onClick={() => setIsMidiOpen(prev => !prev)}
+            >
+              <span>MIDI SETTINGS</span>
+              <span className="header-arrow">{isMidiOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {isMidiOpen && (
+              <div className="section-body">
+                <div className="setting-item">
+                  <label className="setting-label">Output Device</label>
+                  <select 
+                    id="midiOutputDropdown" 
+                    className="dropdown"
+                    value={selectedMidiId}
+                    onChange={handleSelectMidi}
+                  >
+                    {midiOutputs.length === 0 ? (
+                      <option value="">No MIDI Outputs (Click Populate)</option>
+                    ) : (
+                      midiOutputs.map((out) => (
+                        <option key={out.id} value={out.id}>
+                          {out.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                <div className="midi-actions">
+                  <button 
+                    type="button"
+                    className="btn midi-btn" 
+                    onClick={handlePopulateMidi}
+                    disabled={isPopulating}
+                  >
+                    {isPopulating ? 'Scanning...' : 'Populate MIDI'}
+                  </button>
+                  <button 
+                    type="button"
+                    className="btn midi-btn test-btn" 
+                    onClick={handleTestMidi}
+                  >
+                    Test MIDI
+                  </button>
+                </div>
+
+                {midiStatus && (
+                  <div className="midi-status">
+                    {midiStatus}
+                  </div>
+                )}
+
+                <div className="setting-item" style={{ marginTop: '0.85rem' }}>
+                  <label className="setting-label">Sync Delay (ms)</label>
+                  <div className="input-group">
                     <input 
-                      type="text" 
-                      className="sample-name-field"
-                      value={sampleCustomName}
-                      onChange={(e) => setSampleCustomName(sanitizeSampleName(e.target.value))}
-                      placeholder="e.g. mykick"
-                      autoFocus
+                      id="syncInput"
+                      type="number" 
+                      value={syncDelay} 
+                      onChange={e => setSyncDelay(e.target.value)} 
+                      placeholder="MIDI delay (ms)" 
                     />
+                    <button type="button" className="btn" onClick={handleApplySync}>Sync</button>
                   </div>
                 </div>
-              )}
-
-              <div className="sample-actions">
-                <button 
-                  type="button" 
-                  className="btn sample-btn load-btn"
-                  onClick={handleLoadSample}
-                  disabled={!selectedFile || isLoadingSample}
-                >
-                  {isLoadingSample ? 'Loading WAV...' : 'Load Sample'}
-                </button>
-                <button 
-                  type="button" 
-                  className="btn sample-btn reload-btn"
-                  onClick={handleReloadMap}
-                  disabled={isReloadingMap}
-                  title="Reload default sampleMap.json and re-sync session library"
-                >
-                  {isReloadingMap ? 'Reloading...' : 'Reload Sample Map'}
-                </button>
-              </div>
-
-              {sampleStatus && (
-                <div className={`sample-status-box ${sampleStatus.type}`}>
-                  {sampleStatus.message}
-                </div>
-              )}
-            </div>
-
-            {/* Session Loaded Samples List */}
-            {customSamples.length > 0 && (
-              <div className="custom-samples-container">
-                <div className="custom-samples-header">
-                  <span>Session Samples ({customSamples.length})</span>
-                </div>
-                <div className="custom-samples-list">
-                  {customSamples.map((s) => {
-                    const firstVar = s.variations && s.variations[0];
-                    const isPlayingThis = playingPreviewName === s.name;
-                    return (
-                      <div key={s.name} className="custom-sample-row">
-                        <div className="sample-row-main">
-                          <span className="sample-code-tag">play.{s.name}</span>
-                          {firstVar && (
-                            <span className="sample-specs">
-                              {firstVar.duration.toFixed(1)}s • {firstVar.numberOfChannels === 2 ? 'Stereo' : 'Mono'}
-                            </span>
-                          )}
-                        </div>
-                        <div className="sample-row-actions">
-                          <button 
-                            type="button" 
-                            className={`sample-pill-btn ${isPlayingThis ? 'playing' : ''}`}
-                            onClick={() => handleTogglePreview(s)}
-                            title={isPlayingThis ? 'Stop Preview' : 'Preview Sample'}
-                          >
-                            {isPlayingThis ? '⏹' : '▶'}
-                          </button>
-                          {onInsertSnippet && (
-                            <button 
-                              type="button" 
-                              className="sample-pill-btn insert"
-                              onClick={() => onInsertSnippet(`every 1\n  play.${s.name}[80, 0]`)}
-                              title={`Insert play.${s.name} snippet into code`}
-                            >
-                              + Code
-                            </button>
-                          )}
-                          <button 
-                            type="button" 
-                            className="sample-pill-btn delete"
-                            onClick={() => handleRemove(s.name)}
-                            title="Remove sample from session"
-                          >
-                            &times;
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             )}
 
-            <h3 style={{ marginTop: '1.5rem' }}>MIDI Output</h3>
-            <select 
-              id="midiOutputDropdown" 
-              className="dropdown"
-              value={selectedMidiId}
-              onChange={handleSelectMidi}
-            >
-              {midiOutputs.length === 0 ? (
-                <option value="">No MIDI Outputs (Click Populate)</option>
-              ) : (
-                midiOutputs.map((out) => (
-                  <option key={out.id} value={out.id}>
-                    {out.name}
-                  </option>
-                ))
-              )}
-            </select>
-
-            <div className="midi-actions">
-              <button 
-                type="button"
-                className="btn midi-btn" 
-                onClick={handlePopulateMidi}
-                disabled={isPopulating}
-              >
-                {isPopulating ? 'Scanning...' : 'Populate MIDI Output'}
-              </button>
-              <button 
-                type="button"
-                className="btn midi-btn test-btn" 
-                onClick={handleTestMidi}
-              >
-                Test MIDI Output
-              </button>
-            </div>
-
-            {midiStatus && (
-              <div className="midi-status">
-                {midiStatus}
-              </div>
-            )}
-
-            <h3 style={{ marginTop: '1.2rem' }}>MIDI Sync</h3>
-            <div className="input-group">
+            {/* Theme Section */}
+            <div className="setting-item" style={{ marginTop: '1.25rem' }}>
+              <span className="setting-label">THEME</span>
               <input 
-                id="syncInput"
-                type="number" 
-                value={syncDelay} 
-                onChange={e => setSyncDelay(e.target.value)} 
-                placeholder="MIDI delay (ms)" 
+                type="color" 
+                value={themeColor} 
+                onChange={handleColorChange} 
+                className="color-picker" 
               />
-              <button type="button" className="btn" onClick={handleApplySync}>Sync</button>
             </div>
-
-            <h3 style={{ marginTop: '1.5rem' }}>Theme</h3>
-            <input 
-              type="color" 
-              value={themeColor} 
-              onChange={handleColorChange} 
-              className="color-picker" 
-            />
           </div>
 
           <p className="description">

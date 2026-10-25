@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import { useEngine } from './useEngine';
 import { Visualizer } from './Visualizer';
 import { presets } from './presets';
+import { applyTheme } from './theme';
 import './index.css';
 
 function App() {
@@ -91,24 +92,6 @@ function App() {
     localStorage.setItem("program", newCode);
   };
 
-  const applyTheme = (bgHex) => {
-    document.body.style.backgroundColor = bgHex;
-    document.documentElement.style.setProperty('--bg-color', bgHex);
-    // Simple lightness check for contrast
-    const r = parseInt(bgHex.slice(1, 3), 16) || 0;
-    const g = parseInt(bgHex.slice(3, 5), 16) || 0;
-    const b = parseInt(bgHex.slice(5, 7), 16) || 0;
-    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    
-    if (luma < 128) {
-      document.documentElement.classList.add('dark-theme');
-      document.documentElement.classList.remove('light-theme');
-    } else {
-      document.documentElement.classList.add('light-theme');
-      document.documentElement.classList.remove('dark-theme');
-    }
-    localStorage.setItem("theme", bgHex);
-  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {

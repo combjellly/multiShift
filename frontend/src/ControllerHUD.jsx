@@ -21,10 +21,10 @@ export function ControllerHUD({
 
   // Menu items grouped by category
   const categories = [
-    { id: 'statements', label: '➕ Statements' },
-    { id: 'samples', label: '🎵 Samples' },
-    { id: 'variables', label: '🏷️ Variables' },
-    { id: 'values', label: '🔢 Values' }
+    { id: 'statements', label: 'Statements' },
+    { id: 'samples', label: 'Samples' },
+    { id: 'variables', label: 'Variables' },
+    { id: 'values', label: 'Values' }
   ];
 
   const getItemsForCategory = () => {
@@ -57,7 +57,7 @@ export function ControllerHUD({
           {
             type: 'action',
             action: 'random_var',
-            label: '🎲 Generate Random Variable = 1',
+            label: 'Generate Random Variable = 1',
             detail: 'new variable definition'
           },
           {
@@ -167,7 +167,6 @@ export function ControllerHUD({
             onClick={onToggle}
             title="Toggle Controller Mode (Esc or Click)"
           >
-            <span className="controller-icon">🎮</span>
             <span className="controller-title">CONTROLLER MODE</span>
             <span className={`controller-pill ${isActive ? 'on' : 'off'}`}>
               {isActive ? 'ACTIVE' : 'OFF'}
@@ -181,7 +180,7 @@ export function ControllerHUD({
                   <span className="token-type">{currentToken.type.toUpperCase()}:</span>
                   <span className="token-val">{currentToken.text}</span>
                   {isHoldingS && (
-                    <span className="token-scrub-hint">⚡ [HOLDING S: SCRUB WITH ARROWS]</span>
+                    <span className="token-scrub-hint">[HOLDING S: SCRUB WITH ARROWS]</span>
                   )}
                 </div>
               ) : (
@@ -220,7 +219,7 @@ export function ControllerHUD({
             }}
           >
             <div className="d-menu-header">
-              <span className="d-menu-title">⚡ CREATE TOKEN / INSERT (D)</span>
+              <span className="d-menu-title">CREATE TOKEN / INSERT (D)</span>
               <span className="d-menu-shortcuts"><kbd>W</kbd> Confirm &bull; <kbd>A</kbd> Close</span>
             </div>
 

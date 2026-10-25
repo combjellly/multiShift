@@ -8,7 +8,7 @@ import { sampleCompletionSource } from './samples';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 import * as Y from 'yjs';
-import { yCollab } from 'y-codemirror.next';
+import { yCollab, yUndoManagerKeymap } from 'y-codemirror.next';
 import { database } from './firebase';
 import { FirebaseProvider } from './firebase-yjs';
 import { 
@@ -20,13 +20,13 @@ import {
 } from './controllerEngine';
 import { ControllerHUD } from './ControllerHUD';
 
-// Custom syntax highlighting colors for Shift (IDE Color Coded)
+// Custom syntax highlighting colors for Shift dynamically bound to theme CSS variables
 const shiftHighlightStyle = HighlightStyle.define([
-  { tag: t.comment, color: '#6c7086', fontStyle: 'italic' },
-  { tag: t.string, color: '#a6e3a1' },
-  { tag: t.number, color: '#fab387' },
-  { tag: t.operator, color: '#89dceb' },
-  { tag: t.keyword, color: '#cba6f7', fontWeight: '600' },
+  { tag: t.comment, color: 'var(--token-comment, #94a3b8)', fontStyle: 'italic' },
+  { tag: t.string, color: 'var(--token-string, #4ade80)' },
+  { tag: t.number, color: 'var(--token-number, #fbbf24)' },
+  { tag: t.operator, color: 'var(--token-operator, #38bdf8)' },
+  { tag: t.keyword, color: 'var(--token-keyword, #c084fc)', fontWeight: '600' },
 ]);
 
 // StateEffect and StateField for Controller Mode token highlight
@@ -44,12 +44,28 @@ const controllerHighlightField = StateField.define({
           return Decoration.none;
         }
         const { from, to, isScrubbing } = e.value;
+        const docLen = tr.newDoc.length;
+        if (
+          typeof from !== 'number' ||
+          typeof to !== 'number' ||
+          isNaN(from) ||
+          isNaN(to) ||
+          from < 0 ||
+          to > docLen ||
+          from >= to
+        ) {
+          return Decoration.none;
+        }
         const className = isScrubbing 
           ? "cm-controller-token cm-controller-token-scrubbing" 
           : "cm-controller-token cm-controller-token-selected";
-        return Decoration.set([
-          Decoration.mark({ class: className }).range(from, to)
-        ]);
+        try {
+          return Decoration.set([
+            Decoration.mark({ class: className }).range(from, to)
+          ]);
+        } catch (err) {
+          return Decoration.none;
+        }
       }
     }
     return decorations;
@@ -57,10 +73,10 @@ const controllerHighlightField = StateField.define({
   provide: f => EditorView.decorations.from(f)
 });
 
-// Helper navigation functions across lines
+// Helper navigation functions across lines (skipping empty_line tokens)
 function findTokenAbove(tokens, currentToken) {
   if (!currentToken || tokens.length === 0) return 0;
-  const prevLineTokens = tokens.filter(t => t.line === currentToken.line - 1);
+  const prevLineTokens = tokens.filter(t => t.line === currentToken.line - 1 && t.type !== 'empty_line' && t.start < t.end);
   if (prevLineTokens.length > 0) {
     let best = prevLineTokens[0];
     let minDist = Math.abs(best.col - currentToken.col);
@@ -73,16 +89,16 @@ function findTokenAbove(tokens, currentToken) {
     }
     return tokens.indexOf(best);
   }
-  const upperTokens = tokens.filter(t => t.line < currentToken.line);
+  const upperTokens = tokens.filter(t => t.line < currentToken.line && t.type !== 'empty_line' && t.start < t.end);
   if (upperTokens.length > 0) {
     return tokens.indexOf(upperTokens[upperTokens.length - 1]);
   }
-  return 0;
+  return tokens.indexOf(currentToken);
 }
 
 function findTokenBelow(tokens, currentToken) {
   if (!currentToken || tokens.length === 0) return 0;
-  const nextLineTokens = tokens.filter(t => t.line === currentToken.line + 1);
+  const nextLineTokens = tokens.filter(t => t.line === currentToken.line + 1 && t.type !== 'empty_line' && t.start < t.end);
   if (nextLineTokens.length > 0) {
     let best = nextLineTokens[0];
     let minDist = Math.abs(best.col - currentToken.col);
@@ -95,30 +111,30 @@ function findTokenBelow(tokens, currentToken) {
     }
     return tokens.indexOf(best);
   }
-  const lowerTokens = tokens.filter(t => t.line > currentToken.line);
+  const lowerTokens = tokens.filter(t => t.line > currentToken.line && t.type !== 'empty_line' && t.start < t.end);
   if (lowerTokens.length > 0) {
     return tokens.indexOf(lowerTokens[0]);
   }
-  return tokens.length - 1;
+  return tokens.indexOf(currentToken);
 }
 
 function findFirstTokenOnPrevLine(tokens, currentToken) {
   if (!currentToken || tokens.length === 0) return 0;
   for (let l = currentToken.line - 1; l >= 0; l--) {
-    const t = tokens.find(tok => tok.line === l);
+    const t = tokens.find(tok => tok.line === l && tok.type !== 'empty_line' && tok.start < tok.end);
     if (t) return tokens.indexOf(t);
   }
-  return 0;
+  return tokens.indexOf(currentToken);
 }
 
 function findFirstTokenOnNextLine(tokens, currentToken) {
   if (!currentToken || tokens.length === 0) return 0;
   const maxLine = tokens[tokens.length - 1].line;
   for (let l = currentToken.line + 1; l <= maxLine; l++) {
-    const t = tokens.find(tok => tok.line === l);
+    const t = tokens.find(tok => tok.line === l && tok.type !== 'empty_line' && tok.start < tok.end);
     if (t) return tokens.indexOf(t);
   }
-  return tokens.length - 1;
+  return tokens.indexOf(currentToken);
 }
 
 // Widget for the Mute Toggle Circle
@@ -270,13 +286,13 @@ export function Editor({
     ydocRef.current = ydoc;
     const ytext = ydoc.getText('codemirror');
 
-    // Only the official production domain connects to shift_collaboration
-    // Localhost, forks, and development environments connect to shift_dev
+    // Localhost can read all live production code from shift_collaboration in real-time,
+    // but only the official production domain writes back to the database.
     const isProduction = typeof window !== 'undefined' && 
       window.location.hostname === 'combjellly.github.io';
-    const collaborationChannel = isProduction ? 'shift_collaboration' : 'shift_dev';
+    const isReadOnly = !isProduction;
 
-    const provider = new FirebaseProvider(database, collaborationChannel, ydoc);
+    const provider = new FirebaseProvider(database, 'shift_collaboration', ydoc, isReadOnly);
 
     let view = null;
     let cancelled = false;
@@ -317,7 +333,12 @@ export function Editor({
       const state = EditorState.create({
         doc: ytext.toString(),
         extensions: [
-          keymap.of([indentWithTab, ...completionKeymap, ...defaultKeymap]),
+          keymap.of([
+            ...yUndoManagerKeymap,
+            indentWithTab,
+            ...completionKeymap,
+            ...defaultKeymap
+          ]),
           autocompletion({
             override: [sampleCompletionSource],
             defaultKeymap: true,
@@ -347,7 +368,7 @@ export function Editor({
               const head = update.state.selection.main.head;
               const currentDoc = update.state.doc.toString();
               const toks = tokenizeShiftCode(currentDoc);
-              const hitIdx = toks.findIndex(t => head >= t.start && head <= t.end);
+              const hitIdx = toks.findIndex(t => t.type !== 'empty_line' && t.start < t.end && head >= t.start && head <= t.end);
               if (hitIdx !== -1) {
                 setSelectedTokenIdx(hitIdx);
               }
@@ -357,20 +378,20 @@ export function Editor({
             "&": {
               height: "100%",
               backgroundColor: "transparent",
-              color: "var(--text-main, #cdd6f4)",
+              color: "var(--text-main, #ffffff)",
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: "1.1rem",
               outline: "none !important"
             },
             ".cm-content": {
-              caretColor: "var(--accent, #cba6f7)",
+              caretColor: "var(--editor-cursor, #ffffff)",
               paddingLeft: "42px"
             },
             "&.cm-focused .cm-cursor": {
-              borderLeftColor: "var(--accent, #cba6f7)"
+              borderLeftColor: "var(--editor-cursor, #ffffff)"
             },
             "&.cm-focused .cm-selectionBackground, ::selection": {
-              backgroundColor: "rgba(203, 166, 247, 0.3)"
+              backgroundColor: "var(--editor-selection, rgba(255, 255, 255, 0.22))"
             },
             ".every-block": {
                borderLeft: "2px solid transparent",
@@ -380,11 +401,11 @@ export function Editor({
                position: "relative"
             },
             ".every-block:hover": {
-               borderLeftColor: "var(--accent, #cba6f7)"
+               borderLeftColor: "var(--every-block-border, #d90429)"
             },
             ".every-block.commented": {
                opacity: "0.5",
-               borderLeftColor: "#f38ba8"
+               borderLeftColor: "#9e0c1b"
             }
           })
         ]
@@ -438,19 +459,32 @@ export function Editor({
     const view = viewRef.current;
     if (!view) return;
 
-    if (!isControllerMode || !currentToken) {
+    if (!isControllerMode || !currentToken || currentToken.type === 'empty_line' || currentToken.start >= currentToken.end) {
       view.dispatch({ effects: setControllerHighlight.of(null) });
       return;
     }
 
-    view.dispatch({
-      effects: setControllerHighlight.of({
-        from: currentToken.start,
-        to: currentToken.end,
-        isScrubbing: isHoldingS
-      }),
-      scrollIntoView: true
-    });
+    const docLen = view.state.doc.length;
+    const from = Math.max(0, Math.min(docLen, currentToken.start));
+    const to = Math.max(0, Math.min(docLen, currentToken.end));
+
+    if (from >= to) {
+      view.dispatch({ effects: setControllerHighlight.of(null) });
+      return;
+    }
+
+    try {
+      view.dispatch({
+        effects: setControllerHighlight.of({
+          from,
+          to,
+          isScrubbing: isHoldingS
+        }),
+        scrollIntoView: true
+      });
+    } catch (err) {
+      console.warn("Failed to highlight controller token:", err);
+    }
   }, [isControllerMode, currentToken, isHoldingS]);
 
   // Handle Controller Mode key events (WASD, Arrows, Q, R)
@@ -518,9 +552,13 @@ export function Editor({
       if (e.key === 'd' || e.key === 'D') {
         e.preventDefault();
         e.stopPropagation();
-        if (curToken) {
-          const coords = view.coordsAtPos(curToken.start);
-          setCursorCoords(coords);
+        if (curToken && view) {
+          try {
+            const coords = view.coordsAtPos(curToken.start);
+            setCursorCoords(coords);
+          } catch (err) {
+            setCursorCoords(null);
+          }
         } else {
           setCursorCoords(null);
         }
@@ -597,9 +635,21 @@ export function Editor({
         if (currentTokens.length === 0) return;
 
         if (e.key === 'ArrowRight') {
-          setSelectedTokenIdx(prev => Math.min(currentTokens.length - 1, prev + 1));
+          let nextIdx = selectedTokenIdx + 1;
+          while (nextIdx < currentTokens.length && (currentTokens[nextIdx].type === 'empty_line' || currentTokens[nextIdx].start >= currentTokens[nextIdx].end)) {
+            nextIdx++;
+          }
+          if (nextIdx < currentTokens.length) {
+            setSelectedTokenIdx(nextIdx);
+          }
         } else if (e.key === 'ArrowLeft') {
-          setSelectedTokenIdx(prev => Math.max(0, prev - 1));
+          let prevIdx = selectedTokenIdx - 1;
+          while (prevIdx >= 0 && (currentTokens[prevIdx].type === 'empty_line' || currentTokens[prevIdx].start >= currentTokens[prevIdx].end)) {
+            prevIdx--;
+          }
+          if (prevIdx >= 0) {
+            setSelectedTokenIdx(prevIdx);
+          }
         } else if (e.key === 'ArrowUp') {
           setSelectedTokenIdx(findTokenAbove(currentTokens, curToken));
         } else if (e.key === 'ArrowDown') {
