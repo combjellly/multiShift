@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCtmYOcwOGLJiPx6vf8Un2POVGNcqqfKC0",
@@ -15,15 +15,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase App Check with reCAPTCHA v3
+// Initialize Firebase App Check with reCAPTCHA Enterprise (Fraud Defense)
 if (typeof window !== "undefined") {
   try {
-    // Generate debug token in local dev if needed
     if (import.meta.env.DEV) {
       self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
     }
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider("6LeeeP8tAAAAADDP9fmkZqhU1xblSiAqcdqeeuzf"),
+      provider: new ReCaptchaEnterpriseProvider("6LeeeP8tAAAAADDP9fmkZqhU1xblSiAqcdqeeuzf"),
       isTokenAutoRefreshEnabled: true
     });
   } catch (err) {
