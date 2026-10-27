@@ -581,8 +581,8 @@ var showStringImpl = function(s) {
           return "\\v";
       }
       var k = i + 1;
-      var empty3 = k < l && s[k] >= "0" && s[k] <= "9" ? "\\&" : "";
-      return "\\" + c.charCodeAt(0).toString(10) + empty3;
+      var empty4 = k < l && s[k] >= "0" && s[k] <= "9" ? "\\&" : "";
+      return "\\" + c.charCodeAt(0).toString(10) + empty4;
     }
   ) + '"';
 };
@@ -3665,6 +3665,9 @@ var insert = function(dictOrd) {
     };
   };
 };
+var empty2 = /* @__PURE__ */ function() {
+  return Leaf.value;
+}();
 
 // output/Effect.Class/index.js
 var monadEffectEffect = {
@@ -4221,7 +4224,7 @@ var bind4 = /* @__PURE__ */ bind(bindParserT);
 var map7 = /* @__PURE__ */ map(functorParserT);
 var manyRec2 = /* @__PURE__ */ manyRec(monadRecParserT)(alternativeParserT);
 var applyFirst2 = /* @__PURE__ */ applyFirst(applyParserT);
-var empty2 = /* @__PURE__ */ empty(plusParserT);
+var empty3 = /* @__PURE__ */ empty(plusParserT);
 var withLazyErrorMessage = function(p) {
   return function(msg) {
     return alt2(p)(defer3(function(v) {
@@ -4286,7 +4289,7 @@ var choice = function(dictFoldable) {
       throw new Error("Failed pattern match at Parsing.Combinators (line 358, column 11 - line 360, column 32): " + [v.constructor.name]);
     };
   };
-  var $95 = fromMaybe(empty2);
+  var $95 = fromMaybe(empty3);
   var $96 = foldr(dictFoldable)(go)(Nothing.value);
   return function($97) {
     return $95($96($97));
@@ -4335,8 +4338,8 @@ var replicateImpl = typeof Array.prototype.fill === "function" ? replicateFill :
 var length2 = function(xs) {
   return xs.length;
 };
-var unconsImpl = function(empty3, next, xs) {
-  return xs.length === 0 ? empty3({}) : next(xs[0])(xs.slice(1));
+var unconsImpl = function(empty4, next, xs) {
+  return xs.length === 0 ? empty4({}) : next(xs[0])(xs.slice(1));
 };
 var findIndexImpl = function(just, nothing, f, xs) {
   for (var i = 0, l = xs.length; i < l; i++) {
@@ -27825,9 +27828,11 @@ var pure12 = /* @__PURE__ */ pure(applicativeList);
 var show14 = /* @__PURE__ */ show(showParseError);
 var for_2 = /* @__PURE__ */ for_(applicativeEffect)(foldableList);
 var insert3 = /* @__PURE__ */ insert(ordString);
-var map12 = /* @__PURE__ */ map(functorList);
 var traverse2 = /* @__PURE__ */ traverse(traversableList)(applicativeEffect);
+var map12 = /* @__PURE__ */ map(functorList);
 var traverse_2 = /* @__PURE__ */ traverse_(applicativeEffect)(foldableList);
+var lookup1 = /* @__PURE__ */ lookup(ordInt);
+var insert1 = /* @__PURE__ */ insert(ordInt);
 var comparing2 = /* @__PURE__ */ comparing(ordNumber);
 var adjust3 = /* @__PURE__ */ adjust(durationMilliseconds);
 var lessThanOrEq1 = /* @__PURE__ */ lessThanOrEq(ordDateTime);
@@ -27845,7 +27850,7 @@ var varRead = function(x) {
         return 0;
       }
       ;
-      throw new Error("Failed pattern match at Main (line 441, column 16 - line 443, column 32): " + [v.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 466, column 16 - line 468, column 32): " + [v.constructor.name]);
     }();
     return varOut;
   };
@@ -27866,7 +27871,7 @@ var readSequenceNumber = function(i) {
               return i;
             }
             ;
-            throw new Error("Failed pattern match at Main (line 427, column 36 - line 431, column 47): " + [v1.constructor.name]);
+            throw new Error("Failed pattern match at Main (line 452, column 36 - line 456, column 47): " + [v1.constructor.name]);
           }();
           return number;
         }
@@ -27875,7 +27880,7 @@ var readSequenceNumber = function(i) {
           return i;
         }
         ;
-        throw new Error("Failed pattern match at Main (line 424, column 15 - line 434, column 30): " + [v.constructor.name]);
+        throw new Error("Failed pattern match at Main (line 449, column 15 - line 459, column 30): " + [v.constructor.name]);
       }();
       return list;
     };
@@ -27920,7 +27925,7 @@ var resolveExpression = function(v) {
         return v.value0;
       }
       ;
-      throw new Error("Failed pattern match at Main (line 410, column 1 - line 410, column 102): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 435, column 1 - line 435, column 102): " + [v.constructor.name, v1.constructor.name, v2.constructor.name]);
     };
   };
 };
@@ -27950,8 +27955,8 @@ var performPlay = function(er) {
                   if (params.chop instanceof Just) {
                     var part = resolveExpression(params.chop.value0.value1)(varMap)(sequenceMap);
                     var divs = resolveExpression(params.chop.value0.value0)(varMap)(sequenceMap);
-                    var $144 = divs > 0;
-                    if ($144) {
+                    var $149 = divs > 0;
+                    if ($149) {
                       var e = max3(0)(min3(1)((part + 1) / divs));
                       var b = max3(0)(min3(1)(part / divs));
                       return new Tuple(b, e);
@@ -27960,7 +27965,7 @@ var performPlay = function(er) {
                     return new Tuple(0, 1);
                   }
                   ;
-                  throw new Error("Failed pattern match at Main (line 366, column 25 - line 376, column 29): " + [params.chop.constructor.name]);
+                  throw new Error("Failed pattern match at Main (line 391, column 25 - line 401, column 29): " + [params.chop.constructor.name]);
                 }();
                 var se = sampleNaming(t)(sample)(nowCycles)(sampleNum)(n)(g)(p)(c)(0)(0)(0)(v1.value0)(v1.value1)(loopId);
                 return pure12(se);
@@ -28030,17 +28035,17 @@ var parse = function(er) {
       };
     }
     ;
-    throw new Error("Failed pattern match at Main (line 85, column 14 - line 89, column 23): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 89, column 14 - line 93, column 23): " + [v.constructor.name]);
   };
 };
 var panFix = function(p) {
-  var $154 = p >= 1;
-  if ($154) {
+  var $159 = p >= 1;
+  if ($159) {
     return 1;
   }
   ;
-  var $155 = p <= 0;
-  if ($155) {
+  var $160 = p <= 0;
+  if ($160) {
     return 0;
   }
   ;
@@ -28060,11 +28065,11 @@ var loopList = function(v) {
     return Nil.value;
   }
   ;
-  throw new Error("Failed pattern match at Main (line 221, column 1 - line 221, column 33): " + [v.constructor.name]);
+  throw new Error("Failed pattern match at Main (line 219, column 1 - line 219, column 33): " + [v.constructor.name]);
 };
 var limitLoopTime = function(n) {
-  var $162 = n <= 35e-4;
-  if ($162) {
+  var $167 = n <= 35e-4;
+  if ($167) {
     return 35e-4;
   }
   ;
@@ -28101,6 +28106,7 @@ var launch = function __do2() {
   var variables = $$new(singleton4("default")(0))();
   var originalVariables = $$new(singleton4("default")(0))();
   var sequences = $$new(singleton4("default")(Nil.value))();
+  var loopPhases = $$new(empty2)();
   var er = {
     programRef,
     tempo,
@@ -28108,7 +28114,8 @@ var launch = function __do2() {
     wEnd,
     variables,
     originalVariables,
-    sequences
+    sequences,
+    loopPhases
   };
   return er;
 };
@@ -28123,19 +28130,19 @@ var indexLoops = function(xs) {
         return new Cons(new Tuple(v, v1.value0), go(v + 1 | 0)(v1.value1));
       }
       ;
-      throw new Error("Failed pattern match at Main (line 212, column 5 - line 212, column 19): " + [v.constructor.name, v1.constructor.name]);
+      throw new Error("Failed pattern match at Main (line 213, column 5 - line 213, column 19): " + [v.constructor.name, v1.constructor.name]);
     };
   };
   return go(0)(xs);
 };
 var gainFix = function(g) {
-  var $167 = g >= 2;
-  if ($167) {
+  var $172 = g >= 2;
+  if ($172) {
     return 2;
   }
   ;
-  var $168 = g <= 0;
-  if ($168) {
+  var $173 = g <= 0;
+  if ($173) {
     return 0;
   }
   ;
@@ -28147,8 +28154,8 @@ var play = function(wd) {
       return for_2(es)(function(i) {
         var gainFixed = gainFix(i.gain / 100);
         var panFixed = panFix(i.pan / 100);
-        var $169 = i.s === "synth";
-        if ($169) {
+        var $174 = i.s === "synth";
+        if ($174) {
           return function __do3() {
             playSynth(synth)({
               whenPosix: i.whenPosix,
@@ -28162,8 +28169,8 @@ var play = function(wd) {
           };
         }
         ;
-        var $170 = i.note >= 50;
-        if ($170) {
+        var $175 = i.note >= 50;
+        if ($175) {
           return function __do3() {
             playSample(wd)({
               s: i.s,
@@ -28181,8 +28188,8 @@ var play = function(wd) {
           };
         }
         ;
-        var $171 = i.note <= -50;
-        if ($171) {
+        var $176 = i.note <= -50;
+        if ($176) {
           var rNote = -50;
           return function __do3() {
             playSample(wd)({
@@ -28245,8 +28252,8 @@ var cycleIntervalList = function(wStart) {
           var $tco_done = false;
           var $tco_result;
           function $tco_loop(k, acc) {
-            var $172 = k < kStart;
-            if ($172) {
+            var $177 = k < kStart;
+            if ($177) {
               $tco_done = true;
               return acc;
             }
@@ -28264,23 +28271,6 @@ var cycleIntervalList = function(wStart) {
         };
       };
       return go(kEnd - 1)(Nil.value);
-    };
-  };
-};
-var getLoopTimes = function(er) {
-  return function(wStart) {
-    return function(wEnd) {
-      return function(varMap) {
-        return function(seqMap) {
-          return function(v) {
-            var newN = resolveExpression(v.value1.value0)(varMap)(seqMap);
-            var safeN = limitLoopTime(newN);
-            var xs = cycleIntervalList(wStart)(wEnd)(safeN);
-            var l = new Tuple(v.value0, new Loop(v.value1.value0, v.value1.value1));
-            return map12(Tuple.create(l))(xs);
-          };
-        };
-      };
     };
   };
 };
@@ -28375,7 +28365,7 @@ var performAction = function(v) {
                 return pure5(Nil.value);
               }
               ;
-              throw new Error("Failed pattern match at Main (line 298, column 20 - line 305, column 39): " + [v5.constructor.name]);
+              throw new Error("Failed pattern match at Main (line 323, column 20 - line 330, column 39): " + [v5.constructor.name]);
             }();
             return randLookUp();
           };
@@ -28427,8 +28417,8 @@ var performAction = function(v) {
               ;
               return false;
             }();
-            var $212 = condBool === true;
-            if ($212) {
+            var $207 = condBool === true;
+            if ($207) {
               return performListAction(v)(v1)(v3.value3)(v2)();
             }
             ;
@@ -28436,7 +28426,7 @@ var performAction = function(v) {
           };
         }
         ;
-        throw new Error("Failed pattern match at Main (line 264, column 1 - line 264, column 86): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
+        throw new Error("Failed pattern match at Main (line 289, column 1 - line 289, column 86): " + [v.constructor.name, v1.constructor.name, v2.constructor.name, v3.constructor.name]);
       };
     };
   };
@@ -28462,10 +28452,10 @@ var compareOriginalVariable = function(er) {
             return 2012;
           }
           ;
-          throw new Error("Failed pattern match at Main (line 180, column 25 - line 182, column 44): " + [v.constructor.name]);
+          throw new Error("Failed pattern match at Main (line 184, column 25 - line 186, column 44): " + [v.constructor.name]);
         }();
-        var $227 = n === originalValue;
-        if ($227) {
+        var $222 = n === originalValue;
+        if ($222) {
           return write(varMap)(er.variables)();
         }
         ;
@@ -28494,7 +28484,7 @@ var updateGlobalVariable = function(v) {
             return fillMaps(v)(v1.value0)(resolvedNumber);
           }
           ;
-          throw new Error("Failed pattern match at Main (line 151, column 16 - line 153, column 57): " + [v2.constructor.name]);
+          throw new Error("Failed pattern match at Main (line 155, column 16 - line 157, column 57): " + [v2.constructor.name]);
         }();
         return newMap();
       };
@@ -28516,7 +28506,7 @@ var updateGlobalVariable = function(v) {
       return pure5(unit);
     }
     ;
-    throw new Error("Failed pattern match at Main (line 145, column 1 - line 145, column 63): " + [v.constructor.name, v1.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 149, column 1 - line 149, column 63): " + [v.constructor.name, v1.constructor.name]);
   };
 };
 var maybeInitializeGlobalVars = function(er) {
@@ -28527,6 +28517,103 @@ var maybeInitializeGlobalVars = function(er) {
 var collectLoops = function(p) {
   return concat(map12(loopList)(p));
 };
+var collectBeats = function($copy_anchor) {
+  return function($copy_step) {
+    return function($copy_wStart) {
+      return function($copy_wEnd) {
+        return function($copy_acc) {
+          var $tco_var_anchor = $copy_anchor;
+          var $tco_var_step = $copy_step;
+          var $tco_var_wStart = $copy_wStart;
+          var $tco_var_wEnd = $copy_wEnd;
+          var $tco_done = false;
+          var $tco_result;
+          function $tco_loop(anchor, step2, wStart, wEnd, acc) {
+            var nextCandidate = anchor + step2;
+            var $232 = nextCandidate < wEnd - 1e-7;
+            if ($232) {
+              var $233 = nextCandidate >= wStart - 1e-7;
+              if ($233) {
+                $tco_var_anchor = nextCandidate;
+                $tco_var_step = step2;
+                $tco_var_wStart = wStart;
+                $tco_var_wEnd = wEnd;
+                $copy_acc = new Cons(nextCandidate, acc);
+                return;
+              }
+              ;
+              $tco_var_anchor = nextCandidate;
+              $tco_var_step = step2;
+              $tco_var_wStart = wStart;
+              $tco_var_wEnd = wEnd;
+              $copy_acc = acc;
+              return;
+            }
+            ;
+            $tco_done = true;
+            return new Tuple(anchor, reverse(acc));
+          }
+          ;
+          while (!$tco_done) {
+            $tco_result = $tco_loop($tco_var_anchor, $tco_var_step, $tco_var_wStart, $tco_var_wEnd, $copy_acc);
+          }
+          ;
+          return $tco_result;
+        };
+      };
+    };
+  };
+};
+var getLoopTimes = function(er) {
+  return function(wStart) {
+    return function(wEnd) {
+      return function(varMap) {
+        return function(seqMap) {
+          return function(v) {
+            return function __do3() {
+              var phasesMap = read(er.loopPhases)();
+              var newN = resolveExpression(v.value1.value0)(varMap)(seqMap);
+              var safeN = limitLoopTime(newN);
+              var l = new Tuple(v.value0, new Loop(v.value1.value0, v.value1.value1));
+              var startAnchor = function() {
+                var v12 = lookup1(v.value0)(phasesMap);
+                if (v12 instanceof Just) {
+                  var $241 = v12.value0 >= wEnd - 1e-7 || v12.value0 < wStart - 100;
+                  if ($241) {
+                    var k0 = toNumber(floor2((wStart - 1e-7) / safeN));
+                    return k0 * safeN;
+                  }
+                  ;
+                  return v12.value0;
+                }
+                ;
+                if (v12 instanceof Nothing) {
+                  var k0 = toNumber(floor2((wStart - 1e-7) / safeN));
+                  return k0 * safeN;
+                }
+                ;
+                throw new Error("Failed pattern match at Main (line 231, column 23 - line 239, column 26): " + [v12.constructor.name]);
+              }();
+              var delta = wStart - startAnchor;
+              var alignedStart = function() {
+                var $243 = delta > safeN;
+                if ($243) {
+                  var jumps = toNumber(floor2((delta - 1e-7) / safeN));
+                  return startAnchor + safeN * jumps;
+                }
+                ;
+                return startAnchor;
+              }();
+              var v1 = collectBeats(alignedStart)(safeN)(wStart)(wEnd)(Nil.value);
+              write(insert1(v.value0)(v1.value0)(phasesMap))(er.loopPhases)();
+              return map12(Tuple.create(l))(v1.value1);
+            };
+          };
+        };
+      };
+    };
+  };
+};
 var dealWithLoops = function(er) {
   return function(p) {
     return function(t) {
@@ -28536,7 +28623,8 @@ var dealWithLoops = function(er) {
             var varMap = liftEffect2(read(er.variables))();
             var seqMap = liftEffect2(read(er.sequences))();
             var ls = indexLoops(collectLoops(p));
-            var looptimes = concat(map12(getLoopTimes(er)(wStart)(wEnd)(varMap)(seqMap))(ls));
+            var looptimesNested = traverse2(getLoopTimes(er)(wStart)(wEnd)(varMap)(seqMap))(ls)();
+            var looptimes = concat(looptimesNested);
             var sortedList = sortBy(comparing2(snd))(looptimes);
             var events = traverse2(performLoop(er))(sortedList)();
             return concat(events);
@@ -28567,11 +28655,11 @@ var renderStandalone = function(er) {
         var t = nowDateTime();
         var prevW = read(er.wEnd)();
         var futureTime = fromMaybe(t)(adjust3(400)(t));
-        var $237 = lessThanOrEq1(prevW)(futureTime);
-        if ($237) {
+        var $251 = lessThanOrEq1(prevW)(futureTime);
+        if ($251) {
           var wS = function() {
-            var $238 = lessThan1(prevW)(t);
-            if ($238) {
+            var $252 = lessThan1(prevW)(t);
+            if ($252) {
               return t;
             }
             ;
@@ -28595,7 +28683,12 @@ var renderStandalone = function(er) {
     };
   };
 };
+var clearLoopPhases = function(er) {
+  return write(empty2)(er.loopPhases);
+};
 export {
+  clearLoopPhases,
+  collectBeats,
   collectLoops,
   compareOriginalVariable,
   crunchVar,

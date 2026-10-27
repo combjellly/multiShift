@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { launch, launchDirt, launchSynthEngine, renderStandalone, parse } from './shift.js';
+import { launch, launchDirt, launchSynthEngine, renderStandalone, parse, clearLoopPhases } from './shift.js';
 import { playMidiEvents } from './midi.js';
 import { 
   setActiveWebDirt, 
@@ -139,6 +139,9 @@ export function useEngine() {
   const stop = () => {
     if (!engineRef.current) return;
     const { er } = engineRef.current;
+    if (typeof clearLoopPhases === 'function') {
+      try { clearLoopPhases(er)(); } catch (e) { console.error(e); }
+    }
     const res = parse(er)("")();
     setStatus(res);
     dispatchVisualEvent({ type: 'stop' });

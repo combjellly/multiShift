@@ -29,7 +29,7 @@ import WebDirt
 import SynthEngine as SE
 import Data.Traversable
 import Data.Map as Map
-import Data.Int (toNumber,ceil,fromString,round)
+import Data.Int (toNumber,ceil,floor,fromString,round)
 import Data.Number(remainder)
 import Debug
 
@@ -43,11 +43,14 @@ type EngineRecord =
   , variables :: Ref (Map.Map String Number)
   , originalVariables :: Ref (Map.Map String Number)
   , sequences :: Ref (Map.Map String (List Number))
-
+  , loopPhases :: Ref (Map.Map Int Number)
   }
 
 main :: Effect Unit 
 main = pure unit
+
+clearLoopPhases :: EngineRecord -> Effect Unit
+clearLoopPhases er = write Map.empty er.loopPhases
 
 --launched from js end. provides a base engine record 
 launch :: Effect EngineRecord 
@@ -60,9 +63,10 @@ launch = do
   variables <- new $ Map.singleton "default" 0.0
   originalVariables <- new $ Map.singleton "default" 0.0
   sequences <- new $ Map.singleton "default" Nil
+  loopPhases <- new Map.empty
 
   -- create emptyMap. function already for this. 
-  let er = {programRef,tempo,wStart,wEnd,variables,originalVariables,sequences}
+  let er = {programRef,tempo,wStart,wEnd,variables,originalVariables,sequences,loopPhases}
   -- _ <- launchAff $ crudeScheduler 0.03 er
   pure er
 
@@ -193,27 +197,21 @@ compareOriginalVariable er s n = do
 
 dealWithLoops :: EngineRecord -> Program -> Tempo -> Number -> Number -> Effect (List SampleEvent)
 dealWithLoops er p t wStart wEnd = do 
-    -- for each loop statement, figure out when they each activate. 
-        -- collect all loops. Program -> (List Loop)
-        varMap <- liftEffect $ read er.variables 
-        seqMap <- liftEffect $ read er.sequences 
+    varMap <- liftEffect $ read er.variables 
+    seqMap <- liftEffect $ read er.sequences 
 
-        let ls = indexLoops (collectLoops p) -- ::  List (Tuple Int Loop)
-        let looptimes = concat $ map (getLoopTimes er wStart wEnd varMap seqMap) ls -- :: List (Tuple (Tuple Int Loop) Number)
-        let sortedList = sortBy (comparing snd) looptimes -- :: List (Tuple (Tuple Int Loop) Number)
-        events <- traverse (performLoop er) sortedList
-        --log $ show looptimes
-        pure $ concat events
-      -- calculate effect of all activations 
+    let ls = indexLoops (collectLoops p) -- ::  List (Tuple Int Loop)
+    looptimesNested <- traverse (getLoopTimes er wStart wEnd varMap seqMap) ls
+    let looptimes = concat looptimesNested
+    let sortedList = sortBy (comparing snd) looptimes -- :: List (Tuple (Tuple Int Loop) Number)
+    events <- traverse (performLoop er) sortedList
+    pure $ concat events
 
 indexLoops :: List Loop -> List (Tuple Int Loop)
 indexLoops xs = go 0 xs
   where
     go _ Nil = Nil
     go idx (y:ys) = Tuple idx y : go (idx + 1) ys
-
--- traverse keeps things in m context!
--- traverse_ :: unit
 
 collectLoops :: Program -> List Loop
 collectLoops p = concat $ map loopList p 
@@ -223,16 +221,43 @@ loopList (LoopElement x) = x:Nil
 loopList (VariableGlobal _ _) = Nil 
 loopList (GlobalSequence _ _) = Nil 
 
-getLoopTimes :: EngineRecord -> Number -> Number -> Map.Map String Number  -> Map.Map String (List Number)  -> Tuple Int Loop -> List (Tuple (Tuple Int Loop) Number) 
-getLoopTimes er wStart wEnd varMap seqMap (Tuple loopId (Loop n la))  = 
-  -- calculate cycle time of occurences between wstart and wend. 
-  -- for each number , produce a tuple 
-
+getLoopTimes :: EngineRecord -> Number -> Number -> Map.Map String Number -> Map.Map String (List Number) -> Tuple Int Loop -> Effect (List (Tuple (Tuple Int Loop) Number))
+getLoopTimes er wStart wEnd varMap seqMap (Tuple loopId (Loop n la)) = do
+    phasesMap <- read er.loopPhases
     let l = Tuple loopId (Loop n la)
-        newN = resolveExpression n varMap seqMap-- converts loops expression to number 
+        newN = resolveExpression n varMap seqMap
         safeN = limitLoopTime newN   
-        xs = cycleIntervalList wStart wEnd safeN -- List Number
-        in map (Tuple l) xs
+        eps = 0.0000001
+        startAnchor = case Map.lookup loopId phasesMap of
+          Just pb -> if pb >= (wEnd - eps) || pb < (wStart - 100.0) then
+                       let k0 = toNumber $ floor ((wStart - eps) / safeN)
+                       in k0 * safeN
+                     else
+                       pb
+          Nothing ->
+            let k0 = toNumber $ floor ((wStart - eps) / safeN)
+            in k0 * safeN
+        delta = wStart - startAnchor
+        alignedStart = if delta > safeN then
+            let jumps = toNumber $ floor ((delta - eps) / safeN)
+            in startAnchor + (safeN * jumps)
+          else
+            startAnchor
+        Tuple finalAnchor xs = collectBeats alignedStart safeN wStart wEnd Nil
+    write (Map.insert loopId finalAnchor phasesMap) er.loopPhases
+    pure $ map (Tuple l) xs
+
+collectBeats :: Number -> Number -> Number -> Number -> List Number -> Tuple Number (List Number)
+collectBeats anchor step wStart wEnd acc =
+  let nextCandidate = anchor + step
+      eps = 0.0000001
+  in if nextCandidate < (wEnd - eps) then
+       if nextCandidate >= (wStart - eps) then
+         collectBeats nextCandidate step wStart wEnd (nextCandidate : acc)
+       else
+         collectBeats nextCandidate step wStart wEnd acc
+     else
+       Tuple anchor (reverse acc)
 
 limitLoopTime :: Number -> Number
 limitLoopTime n = do
